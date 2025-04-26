@@ -1,16 +1,41 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+// Dummy data for valid emails
+const VALID_EMAILS = [
+  'barkylover@gmail.com',
+  'floofqueen@yahoo.com',
+  'pupperfan@hotmail.com',
+  'waggytails@outlook.com',
+  'dogmomlife@gmail.com'
+];
 
 const CheckInForm = () => {
   const [email, setEmail] = useState('');
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle check-in logic here
-    console.log('Checking in with email:', email);
+    
+    if (VALID_EMAILS.includes(email.toLowerCase())) {
+      toast({
+        title: "Email verified",
+        description: "You can now proceed to sign the waiver.",
+      });
+      navigate('/sign-waiver');
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Invalid email",
+        description: "Please enter the email you used in your Eventbrite registration.",
+      });
+    }
   };
 
   return (
