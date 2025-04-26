@@ -1,13 +1,16 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Upload } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const UploadVaccine = () => {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -15,7 +18,6 @@ const UploadVaccine = () => {
 
     setFile(selectedFile);
 
-    // Only create preview for images
     if (selectedFile.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -30,11 +32,24 @@ const UploadVaccine = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      alert("Please upload a vaccine record first");
+      toast({
+        variant: "destructive",
+        title: "Missing vaccine record",
+        description: "Please upload a vaccine record first",
+      });
       return;
     }
-    // Handle submission logic here
+
     console.log("Submitting file:", file);
+
+    toast({
+      title: "Check-in complete!",
+      description: "Your dog's vaccine record has been submitted successfully.",
+    });
+
+    setTimeout(() => {
+      navigate('/');
+    }, 2000);
   };
 
   return (
