@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import SignWaiver from "./pages/SignWaiver";
+import UploadVaccine from "./pages/UploadVaccine";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/admin-dashboard" element={<Admin />} />
           <Route path="/sign-waiver" element={<SignWaiver />} />
+          <Route path="/upload-vaccine" element={<UploadVaccine />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
