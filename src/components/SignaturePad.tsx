@@ -1,12 +1,15 @@
-
 import { useRef, useEffect } from "react";
 import SignaturePadLib from "signature_pad";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const SignaturePad = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePadLib | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -40,12 +43,22 @@ const SignaturePad = () => {
 
   const handleNext = () => {
     if (signaturePadRef.current?.isEmpty()) {
-      alert("Please provide a signature before proceeding");
+      toast({
+        variant: "destructive",
+        title: "Signature required",
+        description: "Please provide a signature before proceeding",
+      });
       return;
     }
     // Save signature data and proceed to next step
     const signatureData = signaturePadRef.current?.toDataURL();
     console.log("Signature data:", signatureData);
+    
+    toast({
+      title: "Signature saved",
+      description: "Proceeding to vaccine record upload",
+    });
+    navigate('/upload-vaccine');
   };
 
   return (
