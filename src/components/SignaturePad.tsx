@@ -1,13 +1,15 @@
-import { useRef, useEffect } from "react";
+
+import { useRef, useEffect, useState } from "react";
 import SignaturePadLib from "signature_pad";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 const SignaturePad = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePadLib | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -15,6 +17,7 @@ const SignaturePad = () => {
     if (canvasRef.current) {
       signaturePadRef.current = new SignaturePadLib(canvasRef.current, {
         backgroundColor: "rgb(255, 255, 255)",
+        penColor: "#8C81BD",
       });
       
       const resizeCanvas = () => {
@@ -45,48 +48,59 @@ const SignaturePad = () => {
     if (signaturePadRef.current?.isEmpty()) {
       toast({
         variant: "destructive",
-        title: "Signature required",
-        description: "Please provide a signature before proceeding",
+        title: "Paw print needed!",
+        description: "Please sign the waiver before proceeding",
       });
       return;
     }
+    
+    setIsLoading(true);
+    
     // Save signature data and proceed to next step
     const signatureData = signaturePadRef.current?.toDataURL();
     console.log("Signature data:", signatureData);
     
-    toast({
-      title: "Signature saved",
-      description: "Proceeding to vaccine record upload",
-    });
-    navigate('/upload-vaccine');
+    setTimeout(() => {
+      toast({
+        title: "Great job!",
+        description: "Your signature has been saved. Moving to the next step!",
+      });
+      navigate('/upload-vaccine');
+    }, 800);
   };
 
   return (
     <div className="space-y-6">
-      <div className="border rounded-lg overflow-hidden bg-white">
+      <div className="border border-mutts-primary/30 rounded-xl overflow-hidden bg-white/90 shadow-sm">
         <canvas
           ref={canvasRef}
           className="w-full touch-none"
-          style={{ height: "200px" }}
+          style={{ height: "180px" }}
         />
       </div>
       <div className="flex justify-between gap-4">
         <Button
           variant="outline"
           onClick={handleClear}
-          className="w-full"
+          className="w-2/5 border-mutts-primary/30 hover:border-mutts-primary/50 text-mutts-primary rounded-xl"
+          disabled={isLoading}
         >
-          <X className="mr-2" />
-          Clear Signature
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Clear
         </Button>
         <Button
           onClick={handleNext}
-          className="w-full bg-teal-500 hover:bg-teal-600"
+          className="w-3/5 bg-mutts-primary hover:bg-mutts-primary/90 rounded-xl"
+          disabled={isLoading}
         >
-          Next Step
-          <ArrowRight className="ml-2" />
+          {isLoading ? "Saving..." : "Next Step"}
+          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
+      
+      <p className="text-sm text-center text-gray-500">
+        By signing, you agree to our event rules and waiver terms.
+      </p>
     </div>
   );
 };

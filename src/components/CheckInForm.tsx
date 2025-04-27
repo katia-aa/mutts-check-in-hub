@@ -17,46 +17,58 @@ const VALID_EMAILS = [
 
 const CheckInForm = () => {
   const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    if (VALID_EMAILS.includes(email.toLowerCase())) {
-      toast({
-        title: "Email verified",
-        description: "You can now proceed to sign the waiver.",
-      });
-      navigate('/sign-waiver');
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Invalid email",
-        description: "Please enter the email you used in your Eventbrite registration.",
-      });
-    }
+    // Simulate API call
+    setTimeout(() => {
+      if (VALID_EMAILS.includes(email.toLowerCase())) {
+        toast({
+          title: "Tail-wagging news!",
+          description: "We found your registration. Let's continue!",
+        });
+        navigate('/sign-waiver');
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Hmm, that doesn't look right",
+          description: "Please use the email from your Eventbrite registration.",
+        });
+        setIsLoading(false);
+      }
+    }, 800);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6">
+    <form onSubmit={handleSubmit} className="w-full space-y-6">
       <div className="space-y-2">
         <Input
           type="email"
           placeholder="Enter your email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="h-12 px-4 bg-white/90 border-teal-200 focus:border-teal-400 focus:ring-teal-400"
+          className="h-12 px-4 bg-white/90 border-mutts-primary/30 focus-visible:border-mutts-primary focus-visible:ring-mutts-primary rounded-xl"
           required
+          disabled={isLoading}
         />
       </div>
       <Button 
         type="submit" 
-        className="w-full h-12 text-lg font-medium bg-teal-500 hover:bg-teal-600 transition-colors"
+        className="w-full h-12 text-lg font-medium bg-mutts-primary hover:bg-mutts-primary/90 rounded-xl transition-all"
+        disabled={isLoading}
       >
         <Mail className="w-5 h-5 mr-2" />
-        Start Check-In
+        {isLoading ? "Checking..." : "Start Check-In"}
       </Button>
+      
+      <p className="text-sm text-center text-gray-500 pt-2">
+        Bringing a friend? They'll need to check in separately.
+      </p>
     </form>
   );
 };
