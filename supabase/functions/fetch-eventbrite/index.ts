@@ -15,24 +15,54 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Fetching attendees from Eventbrite API");
+    const apiKey = Deno.env.get('EVENTBRITE_API_KEY');
+    
+    if (!apiKey) {
+      throw new Error('EVENTBRITE_API_KEY is not set');
+    }
+
     const response = await fetch(`${BASE_URL}/events/${EVENT_ID}/attendees/`, {
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('EVENTBRITE_API_KEY')}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
     })
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      const errorText = await response.text();
+      console.error(`Eventbrite API error: ${response.status} ${response.statusText}`);
+      console.error(`Error details: ${errorText}`);
+      
+      throw new Error(`Eventbrite API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json()
+    const data = await response.json();
+    
+    // Check if the expected data structure exists
+    if (!data.attendees) {
+      console.error("Unexpected API response format:", data);
+      return new Response(JSON.stringify({ 
+        error: "Unexpected API response format",
+        attendees: []
+      }), {
+        status: 200, // Return 200 with empty array instead of failing
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    console.log(`Successfully fetched ${data.attendees.length} attendees from Eventbrite`);
     
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+    console.error("Error in fetch-eventbrite function:", error.message);
+    
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      attendees: [] 
+    }), {
+      status: 200, // Return 200 with error message instead of 500
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
