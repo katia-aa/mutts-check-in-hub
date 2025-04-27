@@ -1,13 +1,14 @@
 
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { Search, RefreshCw } from "lucide-react";
+import { Search, RefreshCw, AlertCircle } from "lucide-react";
 import AttendeeTable from "@/components/AttendeeTable";
 import { Attendee } from "@/types/attendee";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Link } from "react-router-dom";
 
 const Admin = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -74,15 +75,23 @@ const Admin = () => {
       });
     } catch (error) {
       console.error('Error fetching Eventbrite attendees:', error);
-      setErrorMessage(error.message || "Failed to fetch Eventbrite attendees");
+      
+      // Check if the error is related to API key configuration
+      const errorMsg = error.message || "Failed to fetch Eventbrite attendees";
+      setErrorMessage(errorMsg);
+      
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to fetch Eventbrite attendees",
+        description: errorMsg.includes("API key") ? 
+          "API key configuration error. Please check your Eventbrite API key in Supabase secrets." : 
+          "Failed to fetch Eventbrite attendees",
       });
       
       // Still fetch local attendees even if Eventbrite sync fails
       await fetchAttendees();
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -134,8 +143,18 @@ const Admin = () => {
         
         {errorMessage && (
           <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{errorMessage}</AlertDescription>
+            <AlertDescription>
+              <div className="space-y-2">
+                <p>{errorMessage}</p>
+                {errorMessage.includes("API key") && (
+                  <p className="text-sm">
+                    This appears to be an API key configuration issue. Please make sure the EVENTBRITE_API_KEY is correctly set in your Supabase project.
+                  </p>
+                )}
+              </div>
+            </AlertDescription>
           </Alert>
         )}
         
@@ -162,6 +181,11 @@ const Admin = () => {
             ) : (
               <div className="text-center py-8 text-gray-500">
                 {searchTerm ? "No matching attendees found" : "No attendees found"}
+                {errorMessage && errorMessage.includes("API key") && (
+                  <div className="mt-4">
+                    <p className="mb-2">Please check your API key configuration in Supabase.</p>
+                  </div>
+                )}
               </div>
             )}
           </>
