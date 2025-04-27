@@ -1,4 +1,3 @@
-
 import { useRef, useEffect, useState } from "react";
 import SignaturePadLib from "signature_pad";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const SignaturePad = () => {
   const [searchParams] = useSearchParams();
-  const email = searchParams.get('email');
+  const email = searchParams.get("email");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePadLib | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +21,7 @@ const SignaturePad = () => {
         backgroundColor: "rgb(255, 255, 255)",
         penColor: "#8C81BD",
       });
-      
+
       const resizeCanvas = () => {
         const canvas = canvasRef.current;
         if (canvas) {
@@ -56,25 +55,25 @@ const SignaturePad = () => {
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
       if (!email) {
-        throw new Error('Email is required');
+        throw new Error("Email is required");
       }
 
       // Get signature as SVG
-      const signatureSvg = signaturePadRef.current?.toDataURL();
+      const signatureSvg = signaturePadRef.current?.toDataURL("image/svg+xml");
 
       const { error } = await supabase
-        .from('attendees')
-        .update({ 
+        .from("attendees")
+        .update({
           signature_status: true,
           signature_svg: signatureSvg,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
-        .eq('email', email);
+        .eq("email", email);
 
       if (error) throw error;
 
@@ -82,14 +81,15 @@ const SignaturePad = () => {
         title: "Great job!",
         description: "Your signature has been saved. Moving to the next step!",
       });
-      
+
       navigate(`/upload-vaccine?email=${email}`);
     } catch (error) {
-      console.error('Error saving signature:', error);
+      console.error("Error saving signature:", error);
       toast({
         variant: "destructive",
         title: "Oops!",
-        description: "There was an error saving your signature. Please try again.",
+        description:
+          "There was an error saving your signature. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -124,7 +124,7 @@ const SignaturePad = () => {
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
-      
+
       <p className="text-sm text-center text-gray-500">
         By signing, you agree to our event rules and waiver terms.
       </p>
