@@ -1,11 +1,11 @@
+
 import { useRef, useEffect, useState } from "react";
 import SignaturePadLib from "signature_pad";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, RefreshCw } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useSearchParams } from 'react-router-dom';
 
 const SignaturePad = () => {
   const [searchParams] = useSearchParams();
@@ -60,16 +60,18 @@ const SignaturePad = () => {
     setIsLoading(true);
     
     try {
-      const signatureData = signaturePadRef.current?.toDataURL();
-      
       if (!email) {
         throw new Error('Email is required');
       }
 
+      // Get signature as SVG
+      const signatureSvg = signaturePadRef.current?.toDataURL();
+
       const { error } = await supabase
         .from('attendees')
         .update({ 
-          document_upload_status: true,
+          signature_status: true,
+          signature_svg: signatureSvg,
           updated_at: new Date().toISOString()
         })
         .eq('email', email);

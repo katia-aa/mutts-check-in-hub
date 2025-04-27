@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ const UploadVaccine = () => {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -54,8 +56,21 @@ const UploadVaccine = () => {
       return;
     }
 
+    setIsUploading(true);
+
     try {
-      const { error } = await supabase
+      // Upload file to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${email}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('vaccine_records')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Update attendee record
+      const { error: updateError } = await supabase
         .from('attendees')
         .update({ 
           vaccine_upload_status: true,
@@ -63,7 +78,7 @@ const UploadVaccine = () => {
         })
         .eq('email', email);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       setShowConfetti(true);
 
@@ -76,12 +91,14 @@ const UploadVaccine = () => {
         navigate('/');
       }, 4000);
     } catch (error) {
-      console.error('Error updating vaccine status:', error);
+      console.error('Error uploading vaccine record:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "There was an error saving your information. Please try again.",
+        description: "There was an error uploading your vaccine record. Please try again.",
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -102,6 +119,7 @@ const UploadVaccine = () => {
                 accept=".jpg,.jpeg,.png,.pdf"
                 onChange={handleFileChange}
                 className="max-w-xs border-mutts-primary/30 focus-visible:ring-mutts-primary"
+                disabled={isUploading}
               />
               <p className="mt-2 text-sm text-gray-500">
                 Accepts JPG, PNG, or PDF
@@ -128,8 +146,9 @@ const UploadVaccine = () => {
           <Button
             type="submit"
             className="w-full bg-mutts-secondary hover:bg-mutts-secondary/90 text-white rounded-xl h-12"
+            disabled={isUploading}
           >
-            Complete Check-In
+            {isUploading ? "Uploading..." : "Complete Check-In"}
             <ArrowRight className="ml-2" />
           </Button>
         </form>

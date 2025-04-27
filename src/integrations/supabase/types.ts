@@ -12,31 +12,34 @@ export type Database = {
       attendees: {
         Row: {
           created_at: string | null
-          document_upload_status: boolean | null
           email: string
           eventbrite_id: string | null
           id: string
           name: string | null
+          signature_status: boolean | null
+          signature_svg: string | null
           updated_at: string | null
           vaccine_upload_status: boolean | null
         }
         Insert: {
           created_at?: string | null
-          document_upload_status?: boolean | null
           email: string
           eventbrite_id?: string | null
           id?: string
           name?: string | null
+          signature_status?: boolean | null
+          signature_svg?: string | null
           updated_at?: string | null
           vaccine_upload_status?: boolean | null
         }
         Update: {
           created_at?: string | null
-          document_upload_status?: boolean | null
           email?: string
           eventbrite_id?: string | null
           id?: string
           name?: string | null
+          signature_status?: boolean | null
+          signature_svg?: string | null
           updated_at?: string | null
           vaccine_upload_status?: boolean | null
         }
