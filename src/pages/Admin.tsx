@@ -1,62 +1,50 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import AttendeeTable from "@/components/AttendeeTable";
 import { Attendee } from "@/types/attendee";
-
-const DUMMY_DATA: Attendee[] = [
-  {
-    email: "barkylover@gmail.com",
-    name: "Alex Barker",
-    waiverLink: "#",
-    vaccineLink: "#",
-    submissionTime: "2025-04-26 10:30 AM",
-  },
-  {
-    email: "floofqueen@yahoo.com",
-    name: "Sam Floof",
-    waiverLink: "#",
-    vaccineLink: "#",
-    submissionTime: "2025-04-26 11:15 AM",
-  },
-  {
-    email: "pupperfan@hotmail.com",
-    name: "Jordan Puppers",
-    waiverLink: "#",
-    vaccineLink: "#",
-    submissionTime: "2025-04-26 12:00 PM",
-  },
-  {
-    email: "waggytails@outlook.com",
-    name: "Casey Wags",
-    waiverLink: "#",
-    vaccineLink: "#",
-    submissionTime: "2025-04-26 1:45 PM",
-  },
-  {
-    email: "dogmomlife@gmail.com",
-    name: "Jamie Bones",
-    waiverLink: "#",
-    vaccineLink: "#",
-    submissionTime: "2025-04-26 2:30 PM",
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  
-  const filteredData = DUMMY_DATA.filter(
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAttendees();
+  }, []);
+
+  const fetchAttendees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('attendees')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching attendees:', error);
+        return;
+      }
+
+      setAttendees(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredData = attendees.filter(
     attendee =>
       attendee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      attendee.name.toLowerCase().includes(searchTerm.toLowerCase())
+      (attendee.name && attendee.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Check-In Dashboard</h1>
+          <h1 className="text-3xl font-bold text-mutts-primary">Admin Check-In Dashboard</h1>
         </div>
         
         <div className="relative">
@@ -66,11 +54,15 @@ const Admin = () => {
             placeholder="Search by email or name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-full max-w-md"
+            className="pl-10 w-full max-w-md border-mutts-primary/20 focus:border-mutts-primary"
           />
         </div>
 
-        <AttendeeTable data={filteredData} />
+        {isLoading ? (
+          <div className="text-center text-gray-500">Loading attendees...</div>
+        ) : (
+          <AttendeeTable data={filteredData} onDataUpdate={fetchAttendees} />
+        )}
       </div>
     </div>
   );
