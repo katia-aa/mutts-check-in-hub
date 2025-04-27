@@ -91,7 +91,7 @@ const UploadVaccine = () => {
       <CheckInLayout 
         step={3}
         title="Last Step!"
-        subtitle="Upload your pup's vaccine record and you're good to go"
+        subtitle="Upload your pup's vaccine record or a photo of it, and you're good to go"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
