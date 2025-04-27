@@ -5,15 +5,48 @@ import { Search } from "lucide-react";
 import AttendeeTable from "@/components/AttendeeTable";
 import { Attendee } from "@/types/attendee";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Admin = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    fetchAttendees();
-  }, []);
+  const fetchEventbriteAttendees = async () => {
+    try {
+      const response = await supabase.functions.invoke('fetch-eventbrite');
+      if (response.error) throw response.error;
+
+      const eventbriteAttendees = response.data.attendees;
+      
+      // Sync Eventbrite attendees with Supabase
+      for (const attendee of eventbriteAttendees) {
+        const { error } = await supabase
+          .from('attendees')
+          .upsert({
+            email: attendee.profile.email,
+            name: `${attendee.profile.first_name} ${attendee.profile.last_name}`,
+            eventbrite_id: attendee.id,
+            document_upload_status: false,
+            vaccine_upload_status: false
+          }, {
+            onConflict: 'email'
+          });
+
+        if (error) console.error('Error syncing attendee:', error);
+      }
+
+      await fetchAttendees();
+    } catch (error) {
+      console.error('Error fetching Eventbrite attendees:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch Eventbrite attendees",
+      });
+    }
+  };
 
   const fetchAttendees = async () => {
     try {
@@ -21,18 +54,24 @@ const Admin = () => {
         .from('attendees')
         .select('*');
 
-      if (error) {
-        console.error('Error fetching attendees:', error);
-        return;
-      }
+      if (error) throw error;
 
       setAttendees(data || []);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching attendees:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch attendees",
+      });
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchEventbriteAttendees();
+  }, []);
 
   const filteredData = attendees.filter(
     attendee =>

@@ -5,15 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Dummy data for valid emails
-const VALID_EMAILS = [
-  'barkylover@gmail.com',
-  'floofqueen@yahoo.com',
-  'pupperfan@hotmail.com',
-  'waggytails@outlook.com',
-  'dogmomlife@gmail.com'
-];
+import { supabase } from "@/integrations/supabase/client";
 
 const CheckInForm = () => {
   const [email, setEmail] = useState('');
@@ -21,27 +13,41 @@ const CheckInForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      if (VALID_EMAILS.includes(email.toLowerCase())) {
-        toast({
-          title: "Tail-wagging news!",
-          description: "We found your registration. Let's continue!",
-        });
-        navigate('/sign-waiver');
-      } else {
+    try {
+      const { data, error } = await supabase
+        .from('attendees')
+        .select('*')
+        .eq('email', email.toLowerCase())
+        .single();
+
+      if (error || !data) {
         toast({
           variant: "destructive",
           title: "Hmm, that doesn't look right",
           description: "Please use the email from your Eventbrite registration.",
         });
-        setIsLoading(false);
+        return;
       }
-    }, 800);
+
+      toast({
+        title: "Tail-wagging news!",
+        description: "We found your registration. Let's continue!",
+      });
+      navigate(`/sign-waiver?email=${encodeURIComponent(email)}`);
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An error occurred. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

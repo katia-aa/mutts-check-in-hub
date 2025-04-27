@@ -1,12 +1,15 @@
-
 import { useRef, useEffect, useState } from "react";
 import SignaturePadLib from "signature_pad";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useSearchParams } from 'react-router-dom';
 
 const SignaturePad = () => {
+  const [searchParams] = useSearchParams();
+  const email = searchParams.get('email');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePadLib | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -44,7 +47,7 @@ const SignaturePad = () => {
     signaturePadRef.current?.clear();
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (signaturePadRef.current?.isEmpty()) {
       toast({
         variant: "destructive",
@@ -56,17 +59,39 @@ const SignaturePad = () => {
     
     setIsLoading(true);
     
-    // Save signature data and proceed to next step
-    const signatureData = signaturePadRef.current?.toDataURL();
-    console.log("Signature data:", signatureData);
-    
-    setTimeout(() => {
+    try {
+      const signatureData = signaturePadRef.current?.toDataURL();
+      
+      if (!email) {
+        throw new Error('Email is required');
+      }
+
+      const { error } = await supabase
+        .from('attendees')
+        .update({ 
+          document_upload_status: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('email', email);
+
+      if (error) throw error;
+
       toast({
         title: "Great job!",
         description: "Your signature has been saved. Moving to the next step!",
       });
-      navigate('/upload-vaccine');
-    }, 800);
+      
+      navigate(`/upload-vaccine?email=${email}`);
+    } catch (error) {
+      console.error('Error saving signature:', error);
+      toast({
+        variant: "destructive",
+        title: "Oops!",
+        description: "There was an error saving your signature. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
