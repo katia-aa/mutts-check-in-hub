@@ -10,7 +10,7 @@ interface AttendeeTableProps {
 
 const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
   const getStatusIcon = (attendee: Attendee) => {
-    const hasAllDocs = attendee.document_upload_status && attendee.vaccine_upload_status;
+    const hasAllDocs = attendee.signature_status && attendee.vaccine_upload_status;
     
     if (hasAllDocs) {
       return <CheckCircle className="text-green-500 w-5 h-5" />;
@@ -19,11 +19,11 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
   };
 
   const getStatusText = (attendee: Attendee) => {
-    if (attendee.document_upload_status && attendee.vaccine_upload_status) {
+    if (attendee.signature_status && attendee.vaccine_upload_status) {
       return "All documents uploaded";
     }
     const missing = [];
-    if (!attendee.document_upload_status) missing.push("waiver");
+    if (!attendee.signature_status) missing.push("signature");
     if (!attendee.vaccine_upload_status) missing.push("vaccine record");
     return `Missing: ${missing.join(" & ")}`;
   };

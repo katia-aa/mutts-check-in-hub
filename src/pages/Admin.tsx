@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, RefreshCw, AlertCircle, ExternalLink } from "lucide-react";
@@ -28,14 +27,12 @@ const Admin = () => {
     try {
       console.log("Invoking fetch-eventbrite edge function");
       
-      // Add timeout to detect connection issues
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Connection timeout: Could not reach the edge function")), 10000);
       });
       
       const responsePromise = supabase.functions.invoke('fetch-eventbrite');
       
-      // Race between the actual request and the timeout
       const response: any = await Promise.race([responsePromise, timeoutPromise]);
       
       console.log("Edge function response:", response);
@@ -45,13 +42,11 @@ const Admin = () => {
         throw new Error(`Function error: ${response.error.message}`);
       }
 
-      // Check if there's an error message in the response data
       if (response.data?.error) {
         console.error("Edge function returned error:", response.data.error);
         throw new Error(response.data.error);
       }
 
-      // The API might return successfully but with no attendees data
       const eventbriteAttendees = response.data?.attendees || [];
       console.log('Fetched Eventbrite attendees:', eventbriteAttendees);
 
@@ -59,17 +54,14 @@ const Admin = () => {
         console.warn("No attendees found in Eventbrite response");
       }
 
-      // Check if there's an RLS error message in the response data
       if (response.data?.rlsError) {
         console.error("RLS error:", response.data.rlsError);
         setRlsError(true);
         setErrorMessage("Row Level Security policy violation: The database is preventing the edge function from inserting attendee data.");
-        // Still fetch local attendees even if there's an RLS error
         await fetchAttendees();
         return;
       }
 
-      // Sync Eventbrite attendees with Supabase
       for (const attendee of eventbriteAttendees) {
         if (!attendee.profile || !attendee.profile.email) {
           console.warn("Skipping attendee without email:", attendee);
@@ -82,7 +74,7 @@ const Admin = () => {
             email: attendee.profile.email,
             name: `${attendee.profile.first_name} ${attendee.profile.last_name}`,
             eventbrite_id: attendee.id,
-            document_upload_status: false,
+            signature_status: false,
             vaccine_upload_status: false
           }, {
             onConflict: 'email'
@@ -113,7 +105,6 @@ const Admin = () => {
         setRlsError(true);
         setErrorMessage("Row Level Security policy violation: The database is preventing insertion of attendee data.");
       } else {
-        // Check if the error is related to API key configuration
         const errorMsg = error.message || "Failed to fetch Eventbrite attendees";
         setErrorMessage(errorMsg);
       }
@@ -130,7 +121,6 @@ const Admin = () => {
               : "Failed to fetch Eventbrite attendees",
       });
       
-      // Still fetch local attendees even if Eventbrite sync fails
       await fetchAttendees();
     } finally {
       setIsLoading(false);
