@@ -19,9 +19,12 @@ serve(async (req) => {
     const apiKey = Deno.env.get('EVENTBRITE_API_KEY');
     
     if (!apiKey) {
-      throw new Error('EVENTBRITE_API_KEY is not set');
+      console.error("EVENTBRITE_API_KEY is not set in Supabase secrets");
+      throw new Error('EVENTBRITE_API_KEY is not set in Supabase secrets');
     }
 
+    console.log(`Using EVENT_ID: ${EVENT_ID}`);
+    
     const response = await fetch(`${BASE_URL}/events/${EVENT_ID}/attendees/`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -32,6 +35,10 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error(`Eventbrite API error: ${response.status} ${response.statusText}`);
       console.error(`Error details: ${errorText}`);
+      
+      if (response.status === 403) {
+        throw new Error(`Eventbrite API authentication error (403 Forbidden): Your API key may be invalid or missing required permissions for this event.`);
+      }
       
       throw new Error(`Eventbrite API error: ${response.status} ${response.statusText}`);
     }
