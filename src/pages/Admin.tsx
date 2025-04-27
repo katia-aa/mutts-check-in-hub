@@ -16,12 +16,14 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<boolean>(false);
+  const [rlsError, setRlsError] = useState<boolean>(false);
   const { toast } = useToast();
 
   const fetchEventbriteAttendees = async () => {
     setIsLoading(true);
     setErrorMessage(null);
     setConnectionError(false);
+    setRlsError(false);
     
     try {
       console.log("Invoking fetch-eventbrite edge function");
@@ -57,6 +59,16 @@ const Admin = () => {
         console.warn("No attendees found in Eventbrite response");
       }
 
+      // Check if there's an RLS error message in the response data
+      if (response.data?.rlsError) {
+        console.error("RLS error:", response.data.rlsError);
+        setRlsError(true);
+        setErrorMessage("Row Level Security policy violation: The database is preventing the edge function from inserting attendee data.");
+        // Still fetch local attendees even if there's an RLS error
+        await fetchAttendees();
+        return;
+      }
+
       // Sync Eventbrite attendees with Supabase
       for (const attendee of eventbriteAttendees) {
         if (!attendee.profile || !attendee.profile.email) {
@@ -78,6 +90,11 @@ const Admin = () => {
 
         if (error) {
           console.error('Error syncing attendee:', error);
+          if (error.code === "42501" || error.message?.includes("row-level security")) {
+            setRlsError(true);
+            setErrorMessage("Row Level Security policy violation: The database is preventing insertion of attendee data.");
+            break;
+          }
         }
       }
 
@@ -92,6 +109,9 @@ const Admin = () => {
       if (error.message?.includes("timeout") || error.message?.includes("Failed to fetch")) {
         setConnectionError(true);
         setErrorMessage("Connection issue: Could not reach the edge function. This might be a network problem or the function might be offline.");
+      } else if (error.code === "42501" || error.message?.includes("row-level security")) {
+        setRlsError(true);
+        setErrorMessage("Row Level Security policy violation: The database is preventing insertion of attendee data.");
       } else {
         // Check if the error is related to API key configuration
         const errorMsg = error.message || "Failed to fetch Eventbrite attendees";
@@ -105,7 +125,9 @@ const Admin = () => {
           ? "API key configuration error. Please check your Eventbrite API key in Supabase secrets."
           : error.message?.includes("timeout") || error.message?.includes("Failed to fetch")
             ? "Connection issue with the edge function"
-            : "Failed to fetch Eventbrite attendees",
+            : error.code === "42501" || error.message?.includes("row-level security")
+              ? "Row Level Security policy violation"
+              : "Failed to fetch Eventbrite attendees",
       });
       
       // Still fetch local attendees even if Eventbrite sync fails
@@ -177,6 +199,29 @@ const Admin = () => {
                       <li>Check if the edge function has been deployed correctly</li>
                       <li>Try refreshing the page and syncing again</li>
                     </ul>
+                  </div>
+                ) : rlsError ? (
+                  <div className="mt-2">
+                    <p className="text-sm mb-2">This is a Row Level Security (RLS) policy issue. To fix it:</p>
+                    <ul className="list-disc pl-5 text-sm space-y-1">
+                      <li>Go to your Supabase project dashboard</li>
+                      <li>Navigate to SQL Editor</li>
+                      <li>Run the following SQL to disable RLS on the attendees table:</li>
+                      <code className="block bg-gray-800 text-white p-2 text-sm rounded mt-1 mb-2">
+                        ALTER TABLE public.attendees DISABLE ROW LEVEL SECURITY;
+                      </code>
+                      <li>Or, create a RLS policy that allows the edge function to insert data:
+                        <code className="block bg-gray-800 text-white p-2 text-sm rounded mt-1 mb-2">
+                          {`CREATE POLICY "Allow service role inserts" ON public.attendees FOR INSERT TO service_role USING (true);`}
+                        </code>
+                      </li>
+                      <li>After updating the RLS settings, try syncing again</li>
+                    </ul>
+                    <div className="mt-2">
+                      <Link to="https://supabase.com/dashboard/project/hpjlxjfcfyjjpzbsydue/editor" target="_blank" className="text-blue-500 hover:text-blue-700 flex items-center gap-1">
+                        Open SQL Editor <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    </div>
                   </div>
                 ) : errorMessage.includes("API key") && (
                   <p className="text-sm">
