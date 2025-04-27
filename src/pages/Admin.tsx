@@ -18,8 +18,13 @@ const Admin = () => {
       const response = await supabase.functions.invoke('fetch-eventbrite');
       if (response.error) throw response.error;
 
+      if (!response.data?.attendees) {
+        throw new Error('No attendees data received');
+      }
+
       const eventbriteAttendees = response.data.attendees;
-      
+      console.log('Fetched Eventbrite attendees:', eventbriteAttendees);
+
       // Sync Eventbrite attendees with Supabase
       for (const attendee of eventbriteAttendees) {
         const { error } = await supabase
