@@ -69,7 +69,6 @@ const SignaturePad = () => {
       const { error } = await supabase
         .from("attendees")
         .update({
-          signature_status: true,
           signature_svg: signatureSvg,
           updated_at: new Date().toISOString(),
         })
