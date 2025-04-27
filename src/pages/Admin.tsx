@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { Search, RefreshCw, AlertCircle } from "lucide-react";
+import { Search, RefreshCw, AlertCircle, ExternalLink } from "lucide-react";
 import AttendeeTable from "@/components/AttendeeTable";
 import { Attendee } from "@/types/attendee";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,15 +15,28 @@ const Admin = () => {
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState<boolean>(false);
   const { toast } = useToast();
 
   const fetchEventbriteAttendees = async () => {
     setIsLoading(true);
     setErrorMessage(null);
+    setConnectionError(false);
     
     try {
       console.log("Invoking fetch-eventbrite edge function");
-      const response = await supabase.functions.invoke('fetch-eventbrite');
+      
+      // Add timeout to detect connection issues
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Connection timeout: Could not reach the edge function")), 10000);
+      });
+      
+      const responsePromise = supabase.functions.invoke('fetch-eventbrite');
+      
+      // Race between the actual request and the timeout
+      const response: any = await Promise.race([responsePromise, timeoutPromise]);
+      
+      console.log("Edge function response:", response);
       
       if (response.error) {
         console.error("Supabase function error:", response.error);
@@ -76,16 +89,23 @@ const Admin = () => {
     } catch (error) {
       console.error('Error fetching Eventbrite attendees:', error);
       
-      // Check if the error is related to API key configuration
-      const errorMsg = error.message || "Failed to fetch Eventbrite attendees";
-      setErrorMessage(errorMsg);
+      if (error.message?.includes("timeout") || error.message?.includes("Failed to fetch")) {
+        setConnectionError(true);
+        setErrorMessage("Connection issue: Could not reach the edge function. This might be a network problem or the function might be offline.");
+      } else {
+        // Check if the error is related to API key configuration
+        const errorMsg = error.message || "Failed to fetch Eventbrite attendees";
+        setErrorMessage(errorMsg);
+      }
       
       toast({
         variant: "destructive",
         title: "Error",
-        description: errorMsg.includes("API key") ? 
-          "API key configuration error. Please check your Eventbrite API key in Supabase secrets." : 
-          "Failed to fetch Eventbrite attendees",
+        description: error.message?.includes("API key") 
+          ? "API key configuration error. Please check your Eventbrite API key in Supabase secrets."
+          : error.message?.includes("timeout") || error.message?.includes("Failed to fetch")
+            ? "Connection issue with the edge function"
+            : "Failed to fetch Eventbrite attendees",
       });
       
       // Still fetch local attendees even if Eventbrite sync fails
@@ -148,7 +168,17 @@ const Admin = () => {
             <AlertDescription>
               <div className="space-y-2">
                 <p>{errorMessage}</p>
-                {errorMessage.includes("API key") && (
+                {connectionError ? (
+                  <div className="mt-2">
+                    <p className="text-sm mb-2">Troubleshooting steps:</p>
+                    <ul className="list-disc pl-5 text-sm space-y-1">
+                      <li>Check if your connection to the internet is stable</li>
+                      <li>Verify that the Supabase project is online</li>
+                      <li>Check if the edge function has been deployed correctly</li>
+                      <li>Try refreshing the page and syncing again</li>
+                    </ul>
+                  </div>
+                ) : errorMessage.includes("API key") && (
                   <p className="text-sm">
                     This appears to be an API key configuration issue. Please make sure the EVENTBRITE_API_KEY is correctly set in your Supabase project.
                   </p>
@@ -181,9 +211,9 @@ const Admin = () => {
             ) : (
               <div className="text-center py-8 text-gray-500">
                 {searchTerm ? "No matching attendees found" : "No attendees found"}
-                {errorMessage && errorMessage.includes("API key") && (
+                {errorMessage && (
                   <div className="mt-4">
-                    <p className="mb-2">Please check your API key configuration in Supabase.</p>
+                    <p className="mb-2">Please check your connection and API configuration.</p>
                   </div>
                 )}
               </div>
