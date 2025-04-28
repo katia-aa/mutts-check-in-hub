@@ -7,18 +7,26 @@ import { Database, Settings } from "lucide-react";
 
 const StorageConfig = () => {
   const [isConfiguring, setIsConfiguring] = useState(false);
+  const [detailedError, setDetailedError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleConfigureStorage = async () => {
     setIsConfiguring(true);
+    setDetailedError(null);
+    
     try {
+      console.log("Starting storage configuration process");
       const result = await configureStorage();
+      
       if (result.success) {
+        console.log("Storage configuration succeeded:", result);
         toast({
           title: "Storage configured",
           description: "Vaccine records storage has been properly configured",
         });
       } else {
+        console.error("Configuration error:", result.error);
+        setDetailedError(result.error?.message || "Unknown error occurred");
         toast({
           variant: "destructive",
           title: "Configuration error",
@@ -27,10 +35,11 @@ const StorageConfig = () => {
       }
     } catch (error) {
       console.error("Error configuring storage:", error);
+      setDetailedError(error.message || "Unexpected error occurred");
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred during configuration",
       });
     } finally {
       setIsConfiguring(false);
@@ -49,13 +58,20 @@ const StorageConfig = () => {
           disabled={isConfiguring}
           className="flex items-center gap-2"
         >
-          <Settings className="h-4 w-4" />
+          <Settings className={`h-4 w-4 ${isConfiguring ? 'animate-spin' : ''}`} />
           {isConfiguring ? "Configuring..." : "Configure Storage"}
         </Button>
       </div>
       <p className="mt-2 text-sm text-gray-600">
         If you're experiencing issues with file uploads, click the button above to ensure proper storage permissions.
       </p>
+      
+      {detailedError && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm font-medium text-red-800">Error details:</p>
+          <p className="text-xs font-mono mt-1 text-red-700 break-all">{detailedError}</p>
+        </div>
+      )}
     </div>
   );
 };
