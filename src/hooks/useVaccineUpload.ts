@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -80,18 +79,11 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
       console.log("File size:", file.size, "bytes");
       console.log("File type:", file.type);
 
-      const progressInterval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev !== null && prev < 30) {
-            return prev + 5;
-          }
-          return prev;
-        });
-      }, 300);
-
+      setUploadProgress(10);
+      
       if (!storageConfigured) {
         console.log("Storage not pre-configured, configuring now...");
-        setUploadProgress(10);
+        setIsConfiguringStorage(true);
         const configResult = await configureStorage();
         
         console.log("Storage configuration check:", configResult);
@@ -100,42 +92,26 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
           throw new Error("Failed to configure storage before upload");
         }
         
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        setIsConfiguringStorage(false);
         setStorageConfigured(true);
+        setUploadProgress(30);
       }
-      
-      setUploadProgress(40);
 
-      const fileBlob = new Blob([file], { type: file.type });
-      
-      console.log("Creating signed URL for upload...");
-      const { data: signedURL, error: signedError } = await supabase.storage
+      setUploadProgress(50);
+      const { data, error } = await supabase.storage
         .from('vaccine_records')
-        .createSignedUploadUrl(filePath);
-      
-      if (signedError) {
-        console.error("Error creating signed URL:", signedError);
-        throw new Error(`Failed to create signed URL: ${signedError.message}`);
-      }
-      
-      console.log("Got signed URL:", signedURL);
-      setUploadProgress(60);
-      
-      const uploadResponse = await fetch(signedURL.signedUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': file.type,
-        },
-        body: fileBlob,
-      });
-      
-      if (!uploadResponse.ok) {
-        throw new Error(`HTTP upload error: ${uploadResponse.status}`);
-      }
+        .upload(filePath, file, {
+          upsert: true,
+          contentType: file.type
+        });
 
-      clearInterval(progressInterval);
-      setUploadProgress(80);
-      console.log("Upload successful using signed URL");
+      if (error) {
+        console.error("Upload error:", error);
+        throw new Error(`Upload failed: ${error.message}`);
+      }
+      
+      console.log("Upload successful:", data);
+      setUploadProgress(70);
 
       const { data: { publicUrl } } = supabase.storage
         .from("vaccine_records")
@@ -168,7 +144,7 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
       });
 
       onUploadSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading vaccine record:", error);
       toast({
         variant: "destructive",

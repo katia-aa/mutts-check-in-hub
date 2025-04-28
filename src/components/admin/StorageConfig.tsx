@@ -22,35 +22,65 @@ const StorageConfig = () => {
 
   const verifyBucket = async () => {
     setIsVerifying(true);
+    setDetailedError(null);
+    
     try {
       console.log('Verifying bucket existence...');
-      const { data, error } = await supabase.storage.getBucket('vaccine_records');
       
-      if (error) {
-        console.log('Error checking bucket:', error);
-        setBucketDetails(null);
-        setDetailedError(`Storage not configured: ${error.message}`);
+      // Test file upload permission
+      try {
+        // Create a small test blob
+        const testBlob = new Blob(['test'], { type: 'image/png' });
+        const fileName = `test-${Date.now()}.png`;
+        
+        // Try to upload a test file
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('vaccine_records')
+          .upload(fileName, testBlob, { upsert: true });
+          
+        if (uploadError) {
+          console.error("Error uploading test file:", uploadError);
+          throw uploadError;
+        } else {
+          console.log("Test upload successful:", uploadData);
+          
+          // Clean up test file
+          const { error: deleteError } = await supabase.storage
+            .from('vaccine_records')
+            .remove([fileName]);
+          
+          if (deleteError) {
+            console.warn("Could not delete test file:", deleteError);
+          }
+          
+          setBucketDetails({
+            name: 'vaccine_records',
+            public: true,
+            fileSizeLimit: 10485760, // 10MB
+            allowedMimeTypes: ['image/jpeg', 'image/png', 'application/pdf']
+          });
+          
+          return true;
+        }
+      } catch (uploadTestError) {
+        console.error("Upload test failed:", uploadTestError);
+        
+        // If upload test fails, try to get bucket details
+        const { data, error } = await supabase.storage.getBucket('vaccine_records');
+        
+        if (error) {
+          console.log('Error checking bucket:', error);
+          setBucketDetails(null);
+          setDetailedError(`Storage not configured: ${error.message}`);
+          return false;
+        }
+        
+        console.log('Bucket details:', data);
+        setBucketDetails(data);
+        setDetailedError("Bucket exists but upload test failed. You may need to reconfigure.");
         return false;
       }
-      
-      console.log('Bucket details:', data);
-      setBucketDetails(data);
-      setDetailedError(null);
-      
-      // Check bucket contents
-      const { data: files, error: listError } = await supabase.storage
-        .from('vaccine_records')
-        .list();
-        
-      if (!listError) {
-        console.log('Files in bucket:', files);
-      } else {
-        console.log('Error listing files:', listError);
-        // Don't set error, as bucket exists but might be empty or policy issues
-      }
-      
-      return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Exception checking bucket:', error);
       setDetailedError(`Exception verifying storage: ${error.message}`);
       return false;
@@ -71,7 +101,7 @@ const StorageConfig = () => {
       if (result.success) {
         console.log("Storage configuration succeeded:", result);
         
-        // Wait a bit and then check if the bucket exists after configuration
+        // Wait and then check if the bucket exists after configuration
         await new Promise(resolve => setTimeout(resolve, 3000));
         const bucketExists = await verifyBucket();
         
@@ -79,7 +109,7 @@ const StorageConfig = () => {
           title: "Storage configured",
           description: bucketExists 
             ? "Vaccine records storage has been properly configured" 
-            : "Configuration completed, but the bucket needs verification",
+            : "Configuration completed, but bucket permissions may need adjustment",
         });
       } else {
         console.error("Configuration error:", result.error);
@@ -90,7 +120,7 @@ const StorageConfig = () => {
           description: "Failed to configure storage. Check details below.",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error configuring storage:", error);
       setDetailedError(error.message || "Unexpected error occurred");
       toast({
