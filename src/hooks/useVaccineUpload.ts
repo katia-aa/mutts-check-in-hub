@@ -69,48 +69,52 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
     }));
 
     try {
-      console.log("Submitting file:", state.file);
-      console.log("For email:", email);
-      console.log("File size:", state.file.size, "bytes");
-      console.log("File type:", state.file.type);
+      console.log("Submitting file for:", email);
+      console.log("File details:", {
+        name: state.file.name,
+        size: state.file.size,
+        type: state.file.type
+      });
 
-      setState(prev => ({ ...prev, uploadProgress: 10 }));
+      setState(prev => ({ ...prev, uploadProgress: 20 }));
       
-      // Attempt upload via edge function
+      // First attempt: try upload via edge function
       let uploadResult = await attemptEdgeFunctionUpload(email, state.file);
       
-      // If edge function upload fails, try configuring storage and retry
+      // If edge function fails, try configuring storage and retry
       if (!uploadResult.success) {
+        console.log("First upload attempt failed, trying storage configuration");
         setState(prev => ({ 
           ...prev, 
           isConfiguringStorage: true,
-          uploadProgress: 20 
+          uploadProgress: 40 
         }));
         
-        console.log("Edge function upload failed, configuring storage...");
         const configResult = await configureStorage();
         
         if (!configResult.success) {
-          throw new Error(`Failed to configure storage: ${configResult.error?.message || "Unknown error"}`);
+          // Safely access error property
+          const errorMsg = 'error' in configResult ? configResult.error?.message || String(configResult.error) : 'Unknown configuration error';
+          throw new Error(`Failed to configure storage: ${errorMsg}`);
         }
         
-        setState(prev => ({ ...prev, uploadProgress: 30 }));
+        setState(prev => ({ ...prev, uploadProgress: 60 }));
+        
+        // Wait for configuration to take effect
         await new Promise(resolve => setTimeout(resolve, 8000));
         
         console.log("Storage configured, retrying upload...");
         uploadResult = await attemptEdgeFunctionUpload(email, state.file);
       }
       
+      // Handle final upload result
       if (!uploadResult.success) {
-        // This safely accesses the error property for both success and error cases
-        const errorMessage = 'error' in uploadResult ? uploadResult.error : 'Unknown error occurred';
-        throw new Error(`Upload failed: ${errorMessage}`);
+        // This safely accesses the error property for error cases
+        throw new Error(`Upload failed: ${'error' in uploadResult ? uploadResult.error : 'Unknown error occurred'}`);
       }
       
       console.log("Upload successful:", uploadResult.data);
-      
       setState(prev => ({ ...prev, uploadProgress: 100 }));
-      console.log("Database updated successfully");
 
       toast({
         title: "Yay! You're all set! 🎉",

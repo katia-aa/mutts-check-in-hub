@@ -8,7 +8,10 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
+  console.log("Upload-vaccine function called with method:", req.method);
+  
   if (req.method === 'OPTIONS') {
+    console.log("Handling OPTIONS request");
     return new Response(null, {
       status: 204,
       headers: corsHeaders
@@ -23,9 +26,18 @@ Deno.serve(async (req) => {
 
   try {
     // Parse form data with file and metadata
+    console.log("Parsing form data");
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const email = formData.get('email') as string;
+    
+    console.log("Form data parsed:", { 
+      hasFile: !!file, 
+      fileName: file?.name,
+      fileSize: file?.size,
+      fileType: file?.type,
+      email 
+    });
     
     if (!file || !email) {
       throw new Error('File and email are required');

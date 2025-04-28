@@ -36,6 +36,8 @@ const UploadVaccine = () => {
     onUploadSuccess: handleUploadSuccess,
   });
 
+  console.log("UploadVaccine component rendering with email:", email);
+
   return (
     <>
       {showConfetti && <Confetti />}
@@ -60,7 +62,7 @@ const UploadVaccine = () => {
           <Button
             type="submit"
             className="w-full bg-mutts-secondary hover:bg-mutts-secondary/90 text-white rounded-xl h-12"
-            disabled={isUploading || isConfiguringStorage}
+            disabled={isUploading || isConfiguringStorage || !file}
           >
             {isUploading ? "Uploading..." : (isConfiguringStorage ? "Preparing..." : "Complete Check-In")}
             {!isUploading && !isConfiguringStorage && <ArrowRight className="ml-2" />}

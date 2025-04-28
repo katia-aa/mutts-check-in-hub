@@ -95,18 +95,31 @@ export const attemptEdgeFunctionUpload = async (email: string, file: File): Prom
     formData.append('file', file);
     formData.append('email', email);
     
+    console.log("FormData created with file:", file.name, "size:", file.size, "type:", file.type);
+    console.log("Email added to FormData:", email);
+    
     const { data, error } = await supabase.functions.invoke(
       "upload-vaccine",
       {
-        body: formData,
+        body: formData
       }
     );
     
-    if (error || !data.success) {
-      console.error("Edge function upload failed:", error || data.error);
+    console.log("Edge function response:", data, error);
+    
+    if (error) {
+      console.error("Edge function error:", error);
       return { 
         success: false, 
-        error: error?.message || data?.error || "Unknown edge function error" 
+        error: error.message || "Edge function error" 
+      };
+    }
+    
+    if (!data || !data.success) {
+      console.error("Edge function returned unsuccessful result:", data);
+      return { 
+        success: false, 
+        error: data?.error || "Unknown edge function error" 
       };
     }
     
