@@ -108,6 +108,7 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
         console.log("Initial upload failed, configuring storage...");
         const configResult = await configureStorage();
         
+        // Fixed: Check configResult.success instead of trying to access error on UploadResult
         if (!configResult.success) {
           throw new Error(`Failed to configure storage: ${configResult.error?.message || "Unknown error"}`);
         }
