@@ -33,7 +33,7 @@ const Confetti = () => {
     const speeds = ["slow", "medium", "fast"] as const;
     const confettiPieces = [];
     
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 100; i++) { // Increase count for better coverage
       const color = colors[Math.floor(Math.random() * colors.length)];
       const size = Math.floor(Math.random() * 10) + 5;
       const speed = speeds[Math.floor(Math.random() * speeds.length)];
@@ -56,13 +56,13 @@ const Confetti = () => {
     
     const timer = setTimeout(() => {
       setPieces([]);
-    }, 6000);
+    }, 5000); // Slightly longer duration to ensure all confetti finishes
     
     return () => clearTimeout(timer);
   }, []);
   
   return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden" style={{ width: "100vw", height: "100vh" }}>
       {pieces}
     </div>
   );

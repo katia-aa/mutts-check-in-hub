@@ -1,3 +1,4 @@
+
 import { useRef, useEffect, useState } from "react";
 import SignaturePadLib from "signature_pad";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ const SignaturePad = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePadLib | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useCustomToast();
 
@@ -50,12 +52,15 @@ const SignaturePad = () => {
     if (signaturePadRef.current?.isEmpty()) {
       toast.error({
         title: "Paw print needed!",
-        description: "Please sign the waiver before proceeding",
+        description: "Please sign the waiver before proceeding"
       });
       return;
     }
 
+    if (isSubmitting) return; // Prevent double submission
+
     setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
       if (!email) {
@@ -77,7 +82,7 @@ const SignaturePad = () => {
 
       toast.success({
         title: "Great job!",
-        description: "Your signature has been saved. Moving to the next step!",
+        description: "Your signature has been saved. Moving to the next step!"
       });
 
       navigate(`/upload-vaccine?email=${email}`);
@@ -85,8 +90,13 @@ const SignaturePad = () => {
       console.error("Error saving signature:", error);
       toast.error({
         title: "Oops!",
-        description: "There was an error saving your signature. Please try again.",
+        description: "There was an error saving your signature. Please try again."
       });
+      
+      // Reset submission state for retry
+      setTimeout(() => {
+        setIsSubmitting(false);
+      }, 2000);
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +116,7 @@ const SignaturePad = () => {
           variant="outline"
           onClick={handleClear}
           className="w-2/5 border-mutts-primary/30 hover:border-mutts-primary/50 text-mutts-primary rounded-xl"
-          disabled={isLoading}
+          disabled={isLoading || isSubmitting}
         >
           <RefreshCw className="mr-2 h-4 w-4" />
           Clear
@@ -114,10 +124,10 @@ const SignaturePad = () => {
         <Button
           onClick={handleNext}
           className="w-3/5 bg-mutts-primary hover:bg-mutts-primary/90 rounded-xl"
-          disabled={isLoading}
+          disabled={isLoading || isSubmitting}
         >
           {isLoading ? "Saving..." : "Next Step"}
-          <ArrowRight className="ml-2 h-4 w-4" />
+          {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </div>
 

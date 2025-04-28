@@ -2,7 +2,7 @@
 import * as React from "react";
 import { toast as sonnerToast, Toaster as SonnerToaster } from "sonner";
 import { cn } from "@/lib/utils";
-import { CheckCircle, XCircle, Info, PawPrint, X } from "lucide-react";
+import { CheckCircle, XCircle, Info, PawPrint } from "lucide-react";
 
 type ToastType = "success" | "error" | "info" | "encouragement";
 
@@ -52,16 +52,20 @@ export const CustomToaster = ({ ...props }: ToastProps) => {
   );
 };
 
+interface ToastOptions {
+  title?: string;
+  description?: string;
+  type?: ToastType;
+  duration?: number;
+}
+
 export function toast({
   title,
   description,
   type = "info",
+  duration = 5000,
   ...props
-}: {
-  title?: string;
-  description?: string;
-  type?: ToastType;
-} & React.ComponentProps<typeof sonnerToast>) {
+}: ToastOptions) {
   const { bgColor, icon } = toastStyles[type];
   
   return sonnerToast(
@@ -75,6 +79,7 @@ export function toast({
     {
       className: cn("rounded-full border", bgColor),
       closeButton: true,
+      duration,
       ...props,
     }
   );
