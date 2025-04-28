@@ -29,20 +29,43 @@ const GuestCheckIn = () => {
         return;
       }
 
-      // Create guest record
-      const { data: guestData, error: guestError } = await supabase
+      // Generate the guest email using the same pattern as before
+      const guestEmail = `${guestName.toLowerCase().replace(/\s+/g, '_')}_guest_of_${selectedHostEmail}`;
+
+      // First check if this guest already exists
+      const { data: existingGuest, error: checkError } = await supabase
         .from('attendees')
-        .insert({
-          email: `${guestName.toLowerCase().replace(/\s+/g, '_')}_guest_of_${selectedHostEmail}`,
-          name: guestName,
-          is_guest: true,
-          parent_ticket_email: selectedHostEmail,
-          guest_name: guestName
-        })
-        .select()
+        .select('*')
+        .eq('email', guestEmail)
         .single();
 
-      if (guestError) throw guestError;
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        throw checkError;
+      }
+
+      let guestData;
+      
+      // If guest exists, use that record
+      if (existingGuest) {
+        guestData = existingGuest;
+        console.log('Guest already exists, using existing record:', guestData);
+      } else {
+        // Create new guest record if they don't exist
+        const { data: newGuestData, error: guestError } = await supabase
+          .from('attendees')
+          .insert({
+            email: guestEmail,
+            name: guestName,
+            is_guest: true,
+            parent_ticket_email: selectedHostEmail,
+            guest_name: guestName
+          })
+          .select()
+          .single();
+
+        if (guestError) throw guestError;
+        guestData = newGuestData;
+      }
 
       toast({
         title: "Welcome!",
