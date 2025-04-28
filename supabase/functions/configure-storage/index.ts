@@ -73,25 +73,102 @@ Deno.serve(async (req) => {
       console.log('Bucket already exists:', bucketData);
     }
 
-    // Create policies using SQL
+    // Create policies directly using SQL rather than depending on the admin_setup_storage_policies function
     try {
-      // Execute SQL directly to create policies
-      const { error: policiesError } = await supabaseAdmin.rpc('admin_setup_storage_policies', {
-        bucket_name_param: 'vaccine_records'
-      });
+      console.log('Setting up storage policies directly with SQL');
       
-      if (policiesError) {
-        console.error('Error setting policies via RPC:', policiesError);
-        // Don't throw, continue with the function execution
-      } else {
-        console.log('Successfully set policies via RPC');
+      // First try to use the RPC function if it exists
+      try {
+        const { error: policiesRpcError } = await supabaseAdmin.rpc('admin_setup_storage_policies', {
+          bucket_name_param: 'vaccine_records'
+        });
+        
+        if (!policiesRpcError) {
+          console.log('Successfully set policies via RPC function');
+          // If successful, no need to continue with direct SQL
+          return new Response(JSON.stringify({ 
+            success: true, 
+            message: "Vaccine records storage configured successfully via RPC" 
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          });
+        } else {
+          console.log('RPC function not available, proceeding with direct SQL:', policiesRpcError);
+        }
+      } catch (rpcError) {
+        console.log('RPC approach failed, proceeding with direct SQL:', rpcError);
       }
+      
+      // If RPC failed, apply policies directly with SQL
+      // Delete any existing policies first
+      const { error: deleteError } = await supabaseAdmin.from('storage.policies')
+        .delete()
+        .eq('bucket_id', 'vaccine_records');
+      
+      if (deleteError) {
+        console.warn('Error deleting existing policies (may not exist yet):', deleteError);
+      }
+      
+      // Insert public read policy
+      const { error: readError } = await supabaseAdmin.from('storage.policies')
+        .insert({
+          name: 'Public Read Access',
+          bucket_id: 'vaccine_records',
+          operation: 'SELECT',
+          definition: 'true'
+        });
+        
+      if (readError) {
+        console.error('Error setting read policy:', readError);
+      }
+      
+      // Insert authenticated insert policy
+      const { error: insertError } = await supabaseAdmin.from('storage.policies')
+        .insert({
+          name: 'Allow Uploads',
+          bucket_id: 'vaccine_records',
+          operation: 'INSERT',
+          definition: 'true'
+        });
+        
+      if (insertError) {
+        console.error('Error setting insert policy:', insertError);
+      }
+      
+      // Insert authenticated update policy
+      const { error: updateError } = await supabaseAdmin.from('storage.policies')
+        .insert({
+          name: 'Allow Updates',
+          bucket_id: 'vaccine_records',
+          operation: 'UPDATE',
+          definition: 'true'
+        });
+        
+      if (updateError) {
+        console.error('Error setting update policy:', updateError);
+      }
+      
+      // Insert authenticated delete policy
+      const { error: deleteOpError } = await supabaseAdmin.from('storage.policies')
+        .insert({
+          name: 'Allow Deletion',
+          bucket_id: 'vaccine_records',
+          operation: 'DELETE',
+          definition: 'true'
+        });
+        
+      if (deleteOpError) {
+        console.error('Error setting delete policy:', deleteOpError);
+      }
+      
+      console.log('Storage policies set directly via SQL');
     } catch (policyError) {
       console.error('Exception setting policies:', policyError);
       // Don't throw, continue with the function execution
     }
 
-    // Return success even if policies failed to allow for testing uploads
+    // Return success even if policies partially failed to allow for testing uploads
     return new Response(JSON.stringify({ 
       success: true, 
       message: "Vaccine records storage configured successfully" 

@@ -29,11 +29,13 @@ const StorageConfig = () => {
       if (error) {
         console.log('Error checking bucket:', error);
         setBucketDetails(null);
+        setDetailedError(`Storage not configured: ${error.message}`);
         return false;
       }
       
       console.log('Bucket details:', data);
       setBucketDetails(data);
+      setDetailedError(null);
       
       // Check bucket contents
       const { data: files, error: listError } = await supabase.storage
@@ -42,11 +44,15 @@ const StorageConfig = () => {
         
       if (!listError) {
         console.log('Files in bucket:', files);
+      } else {
+        console.log('Error listing files:', listError);
+        // Don't set error, as bucket exists but might be empty or policy issues
       }
       
       return true;
     } catch (error) {
       console.error('Exception checking bucket:', error);
+      setDetailedError(`Exception verifying storage: ${error.message}`);
       return false;
     } finally {
       setIsVerifying(false);
