@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { configureStorage } from "@/utils/configureStorage";
-import { attemptDirectUpload, attemptSignedUrlUpload, updateAttendeeRecord } from "@/utils/uploadHelpers";
+import { attemptEdgeFunctionUpload } from "@/utils/uploadHelpers";
 import { UseVaccineUploadProps, UploadState } from "@/types/vaccineUpload";
 
 export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadProps) => {
@@ -69,20 +69,17 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
     }));
 
     try {
-      const safeEmail = email.replace(/[^a-zA-Z0-9.@]/g, '_');
-      const fileExt = state.file.name.split('.').pop() || '';
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${safeEmail}/${fileName}`;
-
       console.log("Submitting file:", state.file);
-      console.log("To path:", filePath);
+      console.log("For email:", email);
       console.log("File size:", state.file.size, "bytes");
       console.log("File type:", state.file.type);
 
       setState(prev => ({ ...prev, uploadProgress: 10 }));
       
-      let uploadResult = await attemptDirectUpload(filePath, state.file);
+      // Attempt upload via edge function
+      let uploadResult = await attemptEdgeFunctionUpload(email, state.file);
       
+      // If edge function upload fails, try configuring storage and retry
       if (!uploadResult.success) {
         setState(prev => ({ 
           ...prev, 
@@ -90,7 +87,7 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
           uploadProgress: 20 
         }));
         
-        console.log("Initial upload failed, configuring storage...");
+        console.log("Edge function upload failed, configuring storage...");
         const configResult = await configureStorage();
         
         if (!configResult.success) {
@@ -101,25 +98,17 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
         await new Promise(resolve => setTimeout(resolve, 8000));
         
         console.log("Storage configured, retrying upload...");
-        uploadResult = await attemptDirectUpload(filePath, state.file);
-        
-        if (!uploadResult.success) {
-          console.log("Direct upload still failing, trying with signed URL...");
-          uploadResult = await attemptSignedUrlUpload(filePath, state.file);
-        }
-        
-        setState(prev => ({ ...prev, isConfiguringStorage: false }));
+        uploadResult = await attemptEdgeFunctionUpload(email, state.file);
       }
       
       if (!uploadResult.success) {
-        throw new Error(`All upload methods failed: ${uploadResult.error}`);
+        // This safely accesses the error property for both success and error cases
+        const errorMessage = 'error' in uploadResult ? uploadResult.error : 'Unknown error occurred';
+        throw new Error(`Upload failed: ${errorMessage}`);
       }
       
       console.log("Upload successful:", uploadResult.data);
-      setState(prev => ({ ...prev, uploadProgress: 70 }));
-
-      await updateAttendeeRecord(email, filePath);
-
+      
       setState(prev => ({ ...prev, uploadProgress: 100 }));
       console.log("Database updated successfully");
 

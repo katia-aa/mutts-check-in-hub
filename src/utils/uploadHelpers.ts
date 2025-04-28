@@ -13,7 +13,10 @@ export const attemptDirectUpload = async (filePath: string, file: File): Promise
       
     if (error) {
       console.error("Direct upload failed:", error);
-      return { success: false, error: error.message };
+      return { 
+        success: false, 
+        error: error.message 
+      };
     }
     
     return { 
@@ -26,7 +29,10 @@ export const attemptDirectUpload = async (filePath: string, file: File): Promise
     };
   } catch (uploadError: any) {
     console.error("Exception during direct upload:", uploadError);
-    return { success: false, error: uploadError.message || String(uploadError) };
+    return { 
+      success: false, 
+      error: uploadError.message || String(uploadError) 
+    };
   }
 };
 
@@ -38,7 +44,10 @@ export const attemptSignedUrlUpload = async (filePath: string, file: File): Prom
       
     if (signedUrlError) {
       console.error("Signed URL creation failed:", signedUrlError);
-      return { success: false, error: signedUrlError.message };
+      return { 
+        success: false, 
+        error: signedUrlError.message 
+      };
     }
     
     const { signedUrl, token } = signedUrlData;
@@ -54,7 +63,10 @@ export const attemptSignedUrlUpload = async (filePath: string, file: File): Prom
     
     if (!uploadResponse.ok) {
       console.error("Signed URL upload failed:", uploadResponse.statusText);
-      return { success: false, error: `HTTP error: ${uploadResponse.status} ${uploadResponse.statusText}` };
+      return { 
+        success: false, 
+        error: `HTTP error: ${uploadResponse.status} ${uploadResponse.statusText}` 
+      };
     }
     
     console.log("Signed URL upload successful");
@@ -68,7 +80,51 @@ export const attemptSignedUrlUpload = async (filePath: string, file: File): Prom
     };
   } catch (signedUrlError: any) {
     console.error("Exception during signed URL upload:", signedUrlError);
-    return { success: false, error: signedUrlError.message || String(signedUrlError) };
+    return { 
+      success: false, 
+      error: signedUrlError.message || String(signedUrlError) 
+    };
+  }
+};
+
+export const attemptEdgeFunctionUpload = async (email: string, file: File): Promise<UploadResult> => {
+  try {
+    console.log("Attempting upload via edge function...");
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('email', email);
+    
+    const { data, error } = await supabase.functions.invoke(
+      "upload-vaccine",
+      {
+        body: formData,
+      }
+    );
+    
+    if (error || !data.success) {
+      console.error("Edge function upload failed:", error || data.error);
+      return { 
+        success: false, 
+        error: error?.message || data?.error || "Unknown edge function error" 
+      };
+    }
+    
+    console.log("Edge function upload successful:", data);
+    return { 
+      success: true, 
+      data: {
+        id: data.filePath,
+        path: data.filePath,
+        fullPath: data.filePath
+      }
+    };
+  } catch (edgeFunctionError: any) {
+    console.error("Exception during edge function upload:", edgeFunctionError);
+    return { 
+      success: false, 
+      error: edgeFunctionError.message || String(edgeFunctionError) 
+    };
   }
 };
 

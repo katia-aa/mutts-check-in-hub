@@ -5,7 +5,7 @@ export async function configureStorage() {
   try {
     console.log("Configuring storage...");
     
-    // First, invoke the edge function to configure the storage
+    // Invoke the edge function to configure the storage
     const { data, error } = await supabase.functions.invoke(
       "configure-storage",
       {
@@ -26,8 +26,6 @@ export async function configureStorage() {
     // Longer wait time to ensure the bucket is fully registered
     await new Promise(resolve => setTimeout(resolve, 8000));
 
-    // Instead of trying to verify the bucket directly, we'll just return success
-    // The verification will happen as a separate action with a test upload
     return { success: true, data };
   } catch (e) {
     console.error("Exception configuring storage:", e);
