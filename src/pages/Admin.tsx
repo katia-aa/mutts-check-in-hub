@@ -8,6 +8,7 @@ import SearchBar from "@/components/admin/SearchBar";
 import LoadingState from "@/components/admin/LoadingState";
 import EmptyState from "@/components/admin/EmptyState";
 import AttendeeTable from "@/components/AttendeeTable";
+import StorageConfig from "@/components/admin/StorageConfig";
 
 const Admin = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -196,6 +197,8 @@ const Admin = () => {
           connectionError={connectionError}
           rlsError={rlsError}
         />
+
+        <StorageConfig />
 
         <SearchBar searchTerm={searchTerm} onSearch={setSearchTerm} />
 

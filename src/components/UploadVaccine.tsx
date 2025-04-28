@@ -16,12 +16,23 @@ const UploadVaccine = () => {
   const [preview, setPreview] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
+
+    // Validate file size (10MB max)
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Please select a file smaller than 10MB",
+      });
+      return;
+    }
 
     setFile(selectedFile);
 
@@ -57,27 +68,48 @@ const UploadVaccine = () => {
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
-      // Upload file to Supabase Storage
-      const fileExt = file.name.split(".").pop();
+      // Sanitize email for use in file path (remove special chars)
+      const safeEmail = email.replace(/[^a-zA-Z0-9.@]/g, '_');
+      
+      // Create a unique filename with extension
+      const fileExt = file.name.split('.').pop() || '';
       const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${email}/${fileName}`;
+      const filePath = `${safeEmail}/${fileName}`;
 
-      console.log("Uploading file:", filePath);
+      console.log("Upload starting for file:", file.name);
+      console.log("To path:", filePath);
+      console.log("File size:", file.size, "bytes");
+      console.log("File type:", file.type);
 
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev !== null && prev < 90) {
+            return prev + 10;
+          }
+          return prev;
+        });
+      }, 300);
+
+      // Upload file to Supabase Storage
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from("vaccine_records")
         .upload(filePath, file, {
           cacheControl: "3600",
-          upsert: false,
+          upsert: true, // Changed to true to overwrite if exists
         });
 
+      clearInterval(progressInterval);
+      
       if (uploadError) {
-        console.error("Upload error:", uploadError);
-        throw uploadError;
+        console.error("Upload error details:", uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
+      setUploadProgress(95);
       console.log("Upload successful:", uploadData);
 
       // Get the public URL for the uploaded file
@@ -86,6 +118,7 @@ const UploadVaccine = () => {
       } = supabase.storage.from("vaccine_records").getPublicUrl(filePath);
 
       console.log("Public URL:", publicUrl);
+      setUploadProgress(98);
 
       // Update attendee record with file information
       const { error: updateError } = await supabase
@@ -100,9 +133,10 @@ const UploadVaccine = () => {
 
       if (updateError) {
         console.error("Database update error:", updateError);
-        throw updateError;
+        throw new Error(`Database update failed: ${updateError.message}`);
       }
 
+      setUploadProgress(100);
       console.log("Database updated successfully");
 
       setShowConfetti(true);
@@ -112,6 +146,7 @@ const UploadVaccine = () => {
         description: "Can't wait to see you and your pup at the event!",
       });
 
+      // Add a delay before navigation to allow confetti to play
       setTimeout(() => {
         navigate("/");
       }, 4000);
@@ -120,8 +155,7 @@ const UploadVaccine = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description:
-          "There was an error uploading your vaccine record. Please try again.",
+        description: error.message || "There was an error uploading your vaccine record. Please try again.",
       });
     } finally {
       setIsUploading(false);
@@ -148,9 +182,18 @@ const UploadVaccine = () => {
                 disabled={isUploading}
               />
               <p className="mt-2 text-sm text-gray-500">
-                Accepts JPG, PNG, or PDF
+                Accepts JPG, PNG, or PDF (max 10MB)
               </p>
             </div>
+
+            {uploadProgress !== null && (
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className="bg-mutts-primary h-2.5 rounded-full transition-all duration-300" 
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+            )}
 
             {preview && (
               <div className="mt-4 flex justify-center animate-fade-in">
