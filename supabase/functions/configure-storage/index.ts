@@ -73,99 +73,49 @@ Deno.serve(async (req) => {
       console.log('Bucket already exists:', bucketData);
     }
 
-    // Create policies directly using SQL rather than depending on the admin_setup_storage_policies function
+    // Try to use the RPC function to set up policies
     try {
-      console.log('Setting up storage policies directly with SQL');
+      console.log('Attempting to use admin_setup_storage_policies RPC function');
       
-      // First try to use the RPC function if it exists
-      try {
-        const { error: policiesRpcError } = await supabaseAdmin.rpc('admin_setup_storage_policies', {
-          bucket_name_param: 'vaccine_records'
+      const { error: policiesRpcError } = await supabaseAdmin.rpc('admin_setup_storage_policies', {
+        bucket_name_param: 'vaccine_records'
+      });
+      
+      if (!policiesRpcError) {
+        console.log('Successfully set policies via RPC function');
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: "Vaccine records storage configured successfully via RPC" 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
         });
-        
-        if (!policiesRpcError) {
-          console.log('Successfully set policies via RPC function');
-          // If successful, no need to continue with direct SQL
-          return new Response(JSON.stringify({ 
-            success: true, 
-            message: "Vaccine records storage configured successfully via RPC" 
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          });
-        } else {
-          console.log('RPC function not available, proceeding with direct SQL:', policiesRpcError);
-        }
-      } catch (rpcError) {
-        console.log('RPC approach failed, proceeding with direct SQL:', rpcError);
+      } else {
+        console.log('RPC function error:', policiesRpcError);
       }
+    } catch (rpcError) {
+      console.log('RPC approach failed:', rpcError);
+    }
+
+    // If RPC failed, use the Storage API to update bucket settings
+    try {
+      console.log('Setting bucket to public via API');
       
-      // If RPC failed, apply policies directly with SQL
-      // Delete any existing policies first
-      const { error: deleteError } = await supabaseAdmin.from('storage.policies')
-        .delete()
-        .eq('bucket_id', 'vaccine_records');
+      // Update the bucket to be public
+      const { error: updateError } = await supabaseAdmin.storage.updateBucket('vaccine_records', {
+        public: true,
+        allowedMimeTypes: ['image/jpeg', 'image/png', 'application/pdf'],
+        fileSizeLimit: 10485760 // 10MB
+      });
       
-      if (deleteError) {
-        console.warn('Error deleting existing policies (may not exist yet):', deleteError);
-      }
-      
-      // Insert public read policy
-      const { error: readError } = await supabaseAdmin.from('storage.policies')
-        .insert({
-          name: 'Public Read Access',
-          bucket_id: 'vaccine_records',
-          operation: 'SELECT',
-          definition: 'true'
-        });
-        
-      if (readError) {
-        console.error('Error setting read policy:', readError);
-      }
-      
-      // Insert authenticated insert policy
-      const { error: insertError } = await supabaseAdmin.from('storage.policies')
-        .insert({
-          name: 'Allow Uploads',
-          bucket_id: 'vaccine_records',
-          operation: 'INSERT',
-          definition: 'true'
-        });
-        
-      if (insertError) {
-        console.error('Error setting insert policy:', insertError);
-      }
-      
-      // Insert authenticated update policy
-      const { error: updateError } = await supabaseAdmin.from('storage.policies')
-        .insert({
-          name: 'Allow Updates',
-          bucket_id: 'vaccine_records',
-          operation: 'UPDATE',
-          definition: 'true'
-        });
-        
       if (updateError) {
-        console.error('Error setting update policy:', updateError);
+        console.error('Error updating bucket settings:', updateError);
+      } else {
+        console.log('Successfully updated bucket to public');
       }
       
-      // Insert authenticated delete policy
-      const { error: deleteOpError } = await supabaseAdmin.from('storage.policies')
-        .insert({
-          name: 'Allow Deletion',
-          bucket_id: 'vaccine_records',
-          operation: 'DELETE',
-          definition: 'true'
-        });
-        
-      if (deleteOpError) {
-        console.error('Error setting delete policy:', deleteOpError);
-      }
-      
-      console.log('Storage policies set directly via SQL');
-    } catch (policyError) {
-      console.error('Exception setting policies:', policyError);
-      // Don't throw, continue with the function execution
+    } catch (updateError) {
+      console.error('Exception updating bucket settings:', updateError);
     }
 
     // Return success even if policies partially failed to allow for testing uploads

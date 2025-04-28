@@ -47,7 +47,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_setup_storage_policies: {
+        Args: { bucket_name_param: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
