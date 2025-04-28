@@ -3,7 +3,7 @@ import SignaturePadLib from "signature_pad";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, RefreshCw } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { useCustomToast } from "@/hooks/use-custom-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const SignaturePad = () => {
@@ -13,7 +13,7 @@ const SignaturePad = () => {
   const signaturePadRef = useRef<SignaturePadLib | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast } = useCustomToast();
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -48,8 +48,7 @@ const SignaturePad = () => {
 
   const handleNext = async () => {
     if (signaturePadRef.current?.isEmpty()) {
-      toast({
-        variant: "destructive",
+      toast.error({
         title: "Paw print needed!",
         description: "Please sign the waiver before proceeding",
       });
@@ -76,7 +75,7 @@ const SignaturePad = () => {
 
       if (error) throw error;
 
-      toast({
+      toast.success({
         title: "Great job!",
         description: "Your signature has been saved. Moving to the next step!",
       });
@@ -84,11 +83,9 @@ const SignaturePad = () => {
       navigate(`/upload-vaccine?email=${email}`);
     } catch (error) {
       console.error("Error saving signature:", error);
-      toast({
-        variant: "destructive",
+      toast.error({
         title: "Oops!",
-        description:
-          "There was an error saving your signature. Please try again.",
+        description: "There was an error saving your signature. Please try again.",
       });
     } finally {
       setIsLoading(false);

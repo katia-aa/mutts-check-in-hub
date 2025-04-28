@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CheckInLayout from "@/components/CheckInLayout";
 import GuestSelect from "@/components/GuestSelect";
-import { useToast } from "@/hooks/use-toast";
+import { useCustomToast } from "@/hooks/use-custom-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const GuestCheckIn = () => {
@@ -13,7 +13,7 @@ const GuestCheckIn = () => {
   const [selectedHostEmail, setSelectedHostEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast } = useCustomToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,8 +21,7 @@ const GuestCheckIn = () => {
     
     try {
       if (!selectedHostEmail || !guestName) {
-        toast({
-          variant: "destructive",
+        toast.error({
           title: "Required Information Missing",
           description: "Please enter your name and select a ticket holder.",
         });
@@ -67,15 +66,14 @@ const GuestCheckIn = () => {
         guestData = newGuestData;
       }
 
-      toast({
+      toast.success({
         title: "Welcome!",
         description: "Let's continue with your check-in.",
       });
       navigate(`/sign-waiver?email=${encodeURIComponent(guestData.email)}`);
     } catch (error) {
       console.error('Error:', error);
-      toast({
-        variant: "destructive",
+      toast.error({
         title: "Error",
         description: "An error occurred. Please try again.",
       });

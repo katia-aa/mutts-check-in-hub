@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useCustomToast } from "@/hooks/use-custom-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CheckInFormProps {
@@ -15,7 +15,7 @@ const CheckInForm = ({ isGuest }: CheckInFormProps) => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast } = useCustomToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,23 +30,21 @@ const CheckInForm = ({ isGuest }: CheckInFormProps) => {
         .single();
 
       if (error || !data) {
-        toast({
-          variant: "destructive",
+        toast.error({
           title: "Hmm, that doesn't look right",
           description: "Please use the email from your Eventbrite registration.",
         });
         return;
       }
 
-      toast({
+      toast.encouragement({
         title: "Tail-wagging news!",
         description: "We found your registration. Let's continue!",
       });
       navigate(`/sign-waiver?email=${encodeURIComponent(email)}`);
     } catch (error) {
       console.error('Error:', error);
-      toast({
-        variant: "destructive",
+      toast.error({
         title: "Error",
         description: "An error occurred. Please try again.",
       });
