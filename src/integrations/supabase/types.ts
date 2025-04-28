@@ -18,6 +18,8 @@ export type Database = {
           name: string | null
           signature_svg: string | null
           updated_at: string | null
+          vaccine_file_path: string | null
+          vaccine_file_url: string | null
           vaccine_upload_status: boolean | null
         }
         Insert: {
@@ -28,6 +30,8 @@ export type Database = {
           name?: string | null
           signature_svg?: string | null
           updated_at?: string | null
+          vaccine_file_path?: string | null
+          vaccine_file_url?: string | null
           vaccine_upload_status?: boolean | null
         }
         Update: {
@@ -38,6 +42,8 @@ export type Database = {
           name?: string | null
           signature_svg?: string | null
           updated_at?: string | null
+          vaccine_file_path?: string | null
+          vaccine_file_url?: string | null
           vaccine_upload_status?: boolean | null
         }
         Relationships: []
