@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -60,22 +61,31 @@ const UploadVaccine = () => {
     try {
       // Upload file to Supabase Storage
       const fileExt = file.name.split(".").pop();
-      const fileName = `${email}/${Date.now()}.${fileExt}`;
-      const filePath = `vaccine_records/${fileName}`;
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${email}/${fileName}`;
+
+      console.log("Uploading file:", filePath);
 
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from("vaccine_records")
-        .upload(fileName, file, {
+        .upload(filePath, file, {
           cacheControl: "3600",
           upsert: false,
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        throw uploadError;
+      }
+
+      console.log("Upload successful:", uploadData);
 
       // Get the public URL for the uploaded file
       const {
         data: { publicUrl },
-      } = supabase.storage.from("vaccine_records").getPublicUrl(fileName);
+      } = supabase.storage.from("vaccine_records").getPublicUrl(filePath);
+
+      console.log("Public URL:", publicUrl);
 
       // Update attendee record with file information
       const { error: updateError } = await supabase
@@ -88,7 +98,12 @@ const UploadVaccine = () => {
         })
         .eq("email", email);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Database update error:", updateError);
+        throw updateError;
+      }
+
+      console.log("Database updated successfully");
 
       setShowConfetti(true);
 
