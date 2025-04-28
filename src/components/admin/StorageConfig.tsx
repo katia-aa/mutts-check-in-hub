@@ -30,26 +30,25 @@ const StorageConfig = () => {
     try {
       console.log('Verifying bucket existence...');
       
-      // First, try a more direct approach to check if the bucket exists through the REST API
+      // Instead of using protected properties, use Supabase Storage API directly
       try {
-        const res = await fetch(`${supabase.storageUrl}/bucket/vaccine_records`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${supabase.supabaseKey}`,
-            'apikey': supabase.supabaseKey
-          }
-        });
+        // First approach: Check if we can list buckets
+        const { data: bucketsData, error: bucketsError } = await supabase.storage.listBuckets();
         
-        if (res.ok) {
-          const bucketData = await res.json();
-          console.log('Bucket found via REST API:', bucketData);
-          setBucketDetails(bucketData);
-          
-          // Now test if we can upload a file to validate permissions
-          await testUpload();
-          return true;
+        if (!bucketsError) {
+          const vaccineBucket = bucketsData?.find(bucket => bucket.name === 'vaccine_records');
+          if (vaccineBucket) {
+            console.log('Bucket found via listBuckets:', vaccineBucket);
+            setBucketDetails(vaccineBucket);
+            
+            // Now test if we can upload a file to validate permissions
+            await testUpload();
+            return true;
+          } else {
+            console.log('Bucket not found in list');
+          }
         } else {
-          console.log('Bucket not found via REST API:', await res.text());
+          console.log('Error listing buckets:', bucketsError);
         }
       } catch (restError) {
         console.error('Error checking bucket via REST:', restError);

@@ -163,12 +163,13 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
               throw new Error(`Signed URL creation failed: ${signedUrlError.message}`);
             }
             
-            const { signedURL, token } = signedUrlData;
+            // Corrected property name: signedUrl (lowercase u) instead of signedURL
+            const { signedUrl, token } = signedUrlData;
             
             setUploadProgress(50);
             
             // Upload directly to the signed URL
-            const uploadResponse = await fetch(signedURL, {
+            const uploadResponse = await fetch(signedUrl, {
               method: 'PUT',
               headers: {
                 'Content-Type': file.type,
