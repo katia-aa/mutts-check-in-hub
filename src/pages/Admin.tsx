@@ -4,7 +4,6 @@ import { useAttendeeSync } from "@/hooks/useAttendeeSync";
 import AdminHeader from "@/components/admin/AdminHeader";
 import ErrorDisplay from "@/components/admin/ErrorDisplay";
 import SearchBar from "@/components/admin/SearchBar";
-import StorageConfig from "@/components/admin/StorageConfig";
 import AttendeeContent from "@/components/admin/AttendeeContent";
 
 const Admin = () => {
@@ -40,8 +39,6 @@ const Admin = () => {
           connectionError={connectionError}
           rlsError={rlsError}
         />
-
-        <StorageConfig />
 
         <SearchBar searchTerm={searchTerm} onSearch={setSearchTerm} />
 
