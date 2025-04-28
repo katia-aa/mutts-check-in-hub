@@ -1,37 +1,18 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { configureStorage } from "@/utils/configureStorage";
-
-export interface UseVaccineUploadProps {
-  email: string | null;
-  onUploadSuccess: () => void;
-}
-
-// Define proper return types for clarity
-interface UploadSuccess {
-  success: true;
-  data: {
-    id: string;
-    path: string;
-    fullPath: string;
-  };
-}
-
-interface UploadError {
-  success: false;
-  error: any;
-}
-
-type UploadResult = UploadSuccess | UploadError;
+import { attemptDirectUpload, attemptSignedUrlUpload, updateAttendeeRecord } from "@/utils/uploadHelpers";
+import { UseVaccineUploadProps, UploadState } from "@/types/vaccineUpload";
 
 export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadProps) => {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [isConfiguringStorage, setIsConfiguringStorage] = useState(false);
+  const [state, setState] = useState<UploadState>({
+    file: null,
+    preview: null,
+    isUploading: false,
+    uploadProgress: null,
+    isConfiguringStorage: false
+  });
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,23 +28,23 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
       return;
     }
 
-    setFile(selectedFile);
+    setState(prev => ({ ...prev, file: selectedFile }));
     console.log("Selected file:", selectedFile);
 
     if (selectedFile.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreview(reader.result as string);
+        setState(prev => ({ ...prev, preview: reader.result as string }));
       };
       reader.readAsDataURL(selectedFile);
     } else {
-      setPreview(null);
+      setState(prev => ({ ...prev, preview: null }));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) {
+    if (!state.file) {
       toast({
         variant: "destructive",
         title: "Oops! Missing vaccine record",
@@ -81,86 +62,65 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
       return;
     }
 
-    setIsUploading(true);
-    setUploadProgress(0);
+    setState(prev => ({ 
+      ...prev, 
+      isUploading: true,
+      uploadProgress: 0 
+    }));
 
     try {
       const safeEmail = email.replace(/[^a-zA-Z0-9.@]/g, '_');
-      const fileExt = file.name.split('.').pop() || '';
+      const fileExt = state.file.name.split('.').pop() || '';
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${safeEmail}/${fileName}`;
 
-      console.log("Submitting file:", file);
+      console.log("Submitting file:", state.file);
       console.log("To path:", filePath);
-      console.log("File size:", file.size, "bytes");
-      console.log("File type:", file.type);
+      console.log("File size:", state.file.size, "bytes");
+      console.log("File type:", state.file.type);
 
-      setUploadProgress(10);
+      setState(prev => ({ ...prev, uploadProgress: 10 }));
       
-      // Try direct upload first
-      let uploadResult = await attemptDirectUpload(filePath, file);
+      let uploadResult = await attemptDirectUpload(filePath, state.file);
       
-      // If direct upload failed, try configuration and retry
       if (!uploadResult.success) {
-        setIsConfiguringStorage(true);
-        setUploadProgress(20);
+        setState(prev => ({ 
+          ...prev, 
+          isConfiguringStorage: true,
+          uploadProgress: 20 
+        }));
         
         console.log("Initial upload failed, configuring storage...");
         const configResult = await configureStorage();
         
-        // Fixed: Check configResult.success instead of trying to access error on UploadResult
         if (!configResult.success) {
           throw new Error(`Failed to configure storage: ${configResult.error?.message || "Unknown error"}`);
         }
         
-        setUploadProgress(30);
-        // Wait longer for storage configuration to propagate
+        setState(prev => ({ ...prev, uploadProgress: 30 }));
         await new Promise(resolve => setTimeout(resolve, 8000));
         
         console.log("Storage configured, retrying upload...");
-        uploadResult = await attemptDirectUpload(filePath, file);
+        uploadResult = await attemptDirectUpload(filePath, state.file);
         
-        // If still failing, try with signed URL
         if (!uploadResult.success) {
           console.log("Direct upload still failing, trying with signed URL...");
-          uploadResult = await attemptSignedUrlUpload(filePath, file);
+          uploadResult = await attemptSignedUrlUpload(filePath, state.file);
         }
         
-        setIsConfiguringStorage(false);
+        setState(prev => ({ ...prev, isConfiguringStorage: false }));
       }
       
-      // Fix: Properly check for success/failure using type guard
       if (!uploadResult.success) {
-        // Now TypeScript knows uploadResult is of type UploadError here
         throw new Error(`All upload methods failed: ${uploadResult.error}`);
       }
       
       console.log("Upload successful:", uploadResult.data);
-      setUploadProgress(70);
+      setState(prev => ({ ...prev, uploadProgress: 70 }));
 
-      const { data: { publicUrl } } = supabase.storage
-        .from("vaccine_records")
-        .getPublicUrl(filePath);
+      await updateAttendeeRecord(email, filePath);
 
-      console.log("Public URL:", publicUrl);
-      setUploadProgress(90);
-
-      const { error: updateError } = await supabase
-        .from("attendees")
-        .update({
-          vaccine_upload_status: true,
-          vaccine_file_path: filePath,
-          vaccine_file_url: publicUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("email", email);
-
-      if (updateError) {
-        console.error("Database update error:", updateError);
-        throw new Error(`Database update failed: ${updateError.message}`);
-      }
-
-      setUploadProgress(100);
+      setState(prev => ({ ...prev, uploadProgress: 100 }));
       console.log("Database updated successfully");
 
       toast({
@@ -177,95 +137,20 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
         description: error.message || "There was an error uploading your vaccine record. Please try again.",
       });
     } finally {
-      setIsUploading(false);
-      setIsConfiguringStorage(false);
-    }
-  };
-  
-  // Helper function for direct upload
-  const attemptDirectUpload = async (filePath: string, file: File): Promise<UploadResult> => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('vaccine_records')
-        .upload(filePath, file, {
-          upsert: true,
-          contentType: file.type
-        });
-        
-      if (error) {
-        console.error("Direct upload failed:", error);
-        return { success: false, error: error.message };
-      }
-      
-      return { 
-        success: true, 
-        data: {
-          id: data?.id || filePath,
-          path: data?.path || filePath,
-          fullPath: filePath
-        }
-      };
-    } catch (uploadError: any) {
-      console.error("Exception during direct upload:", uploadError);
-      return { success: false, error: uploadError.message || String(uploadError) };
-    }
-  };
-  
-  // Helper function for signed URL upload
-  const attemptSignedUrlUpload = async (filePath: string, file: File): Promise<UploadResult> => {
-    try {
-      setUploadProgress(40);
-      
-      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-        .from('vaccine_records')
-        .createSignedUploadUrl(filePath);
-        
-      if (signedUrlError) {
-        console.error("Signed URL creation failed:", signedUrlError);
-        return { success: false, error: signedUrlError.message };
-      }
-      
-      // Use the correct property name 'signedUrl' (not signedURL)
-      const { signedUrl, token } = signedUrlData;
-      
-      setUploadProgress(50);
-      
-      // Upload directly to the signed URL
-      const uploadResponse = await fetch(signedUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': file.type,
-          'x-upsert': 'true'
-        },
-        body: file
-      });
-      
-      if (!uploadResponse.ok) {
-        console.error("Signed URL upload failed:", uploadResponse.statusText);
-        return { success: false, error: `HTTP error: ${uploadResponse.status} ${uploadResponse.statusText}` };
-      }
-      
-      console.log("Signed URL upload successful");
-      return { 
-        success: true, 
-        data: {
-          id: token || filePath,
-          path: filePath,
-          fullPath: filePath
-        }
-      };
-    } catch (signedUrlError: any) {
-      console.error("Exception during signed URL upload:", signedUrlError);
-      return { success: false, error: signedUrlError.message || String(signedUrlError) };
+      setState(prev => ({ 
+        ...prev, 
+        isUploading: false,
+        isConfiguringStorage: false 
+      }));
     }
   };
 
   return {
-    file,
-    preview,
-    isUploading,
-    uploadProgress,
-    isConfiguringStorage,
+    file: state.file,
+    preview: state.preview,
+    isUploading: state.isUploading,
+    uploadProgress: state.uploadProgress,
+    isConfiguringStorage: state.isConfiguringStorage,
     handleFileChange,
     handleSubmit,
   };
