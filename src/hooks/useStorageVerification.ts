@@ -29,7 +29,7 @@ export const useStorageVerification = (): UseStorageVerificationReturn => {
       const testBlob = new Blob(['test'], { type: 'text/plain' });
       const fileName = `test-${Date.now()}.txt`;
       
-      console.log('Attempting test upload to verify permissions...');
+      console.log('Attempting test upload to verify storage...');
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('vaccine_records')
@@ -39,23 +39,30 @@ export const useStorageVerification = (): UseStorageVerificationReturn => {
         });
         
       if (uploadError) {
-        console.error("Error uploading test file:", uploadError);
-        setDetailedError(`Bucket exists but upload failed: ${uploadError.message}`);
+        console.error("Storage test upload failed:", uploadError);
+        setDetailedError(`Upload test failed: ${uploadError.message}`);
         setUploadStatus('error');
         return false;
       }
 
       console.log("Test upload successful:", uploadData);
       
+      // Clean up the test file
       await supabase.storage
         .from('vaccine_records')
         .remove([fileName]);
       
       setUploadStatus('success');
+      setBucketDetails({
+        name: 'vaccine_records',
+        public: true,
+        file_size_limit: 10 * 1024 * 1024
+      });
+      
       return true;
     } catch (uploadTestError: any) {
       console.error("Upload test failed:", uploadTestError);
-      setDetailedError(`Bucket exists but upload test failed: ${uploadTestError.message}`);
+      setDetailedError(`Storage test failed: ${uploadTestError.message}`);
       setUploadStatus('error');
       return false;
     }
@@ -67,50 +74,12 @@ export const useStorageVerification = (): UseStorageVerificationReturn => {
     setUploadStatus('idle');
     
     try {
-      console.log('Verifying bucket existence...');
-      
-      const { data: bucketsData, error: bucketsError } = await supabase.storage.listBuckets();
-      
-      if (!bucketsError) {
-        console.log('Bucket list retrieved:', bucketsData);
-        const vaccineBucket = bucketsData?.find(bucket => bucket.name === 'vaccine_records');
-        if (vaccineBucket) {
-          console.log('Bucket found in list:', vaccineBucket);
-          setBucketDetails(vaccineBucket);
-          
-          await testUpload();
-          return true;
-        }
-        console.log('Bucket not found in list');
-      } else {
-        console.log('Error listing buckets:', bucketsError);
-      }
-      
-      try {
-        const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('vaccine_records');
-        
-        if (bucketError) {
-          console.log('Error checking bucket directly:', bucketError);
-          setBucketDetails(null);
-          setDetailedError(`Storage not configured: ${bucketError.message}`);
-          setUploadStatus('error');
-          return false;
-        }
-        
-        console.log('Bucket details retrieved directly:', bucketData);
-        setBucketDetails(bucketData);
-        
-        await testUpload();
-        return true;
-      } catch (bucketCheckError) {
-        console.error('Error during bucket check:', bucketCheckError);
-        setDetailedError(`Error checking bucket: ${bucketCheckError instanceof Error ? bucketCheckError.message : String(bucketCheckError)}`);
-        setUploadStatus('error');
-        return false;
-      }
+      console.log('Verifying storage with a test upload...');
+      const testSuccess = await testUpload();
+      return testSuccess;
     } catch (error: any) {
       console.error('Exception verifying storage:', error);
-      setDetailedError(`Exception verifying storage: ${error.message}`);
+      setDetailedError(`Storage verification error: ${error.message}`);
       setUploadStatus('error');
       return false;
     } finally {
