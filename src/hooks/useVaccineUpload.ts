@@ -9,6 +9,23 @@ export interface UseVaccineUploadProps {
   onUploadSuccess: () => void;
 }
 
+// Define proper return types for clarity
+interface UploadSuccess {
+  success: true;
+  data: {
+    id: string;
+    path: string;
+    fullPath: string;
+  };
+}
+
+interface UploadError {
+  success: false;
+  error: any;
+}
+
+type UploadResult = UploadSuccess | UploadError;
+
 export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -162,8 +179,8 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
     }
   };
   
-  // Helper function for direct upload
-  const attemptDirectUpload = async (filePath: string, file: File) => {
+  // Helper function for direct upload - updated return type to match expected format
+  const attemptDirectUpload = async (filePath: string, file: File): Promise<UploadResult> => {
     try {
       const { data, error } = await supabase.storage
         .from('vaccine_records')
@@ -177,15 +194,23 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
         return { success: false, error: error.message };
       }
       
-      return { success: true, data };
+      // Fix: Match the expected return type structure
+      return { 
+        success: true, 
+        data: {
+          id: data?.id || filePath, // Use filePath as id if not available
+          path: data?.path || filePath,
+          fullPath: filePath
+        }
+      };
     } catch (uploadError: any) {
       console.error("Exception during direct upload:", uploadError);
       return { success: false, error: uploadError.message || String(uploadError) };
     }
   };
   
-  // Helper function for signed URL upload
-  const attemptSignedUrlUpload = async (filePath: string, file: File) => {
+  // Helper function for signed URL upload - updated return type to match expected format
+  const attemptSignedUrlUpload = async (filePath: string, file: File): Promise<UploadResult> => {
     try {
       setUploadProgress(40);
       
@@ -219,7 +244,15 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
       }
       
       console.log("Signed URL upload successful");
-      return { success: true, data: { path: filePath } };
+      // Fix: Match the expected return type structure
+      return { 
+        success: true, 
+        data: {
+          id: token || filePath,  // Use token as id, fallback to filePath
+          path: filePath,
+          fullPath: filePath
+        }
+      };
     } catch (signedUrlError: any) {
       console.error("Exception during signed URL upload:", signedUrlError);
       return { success: false, error: signedUrlError.message || String(signedUrlError) };
