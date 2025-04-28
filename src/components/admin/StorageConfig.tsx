@@ -1,36 +1,62 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { configureStorage } from "@/utils/configureStorage";
 import { useToast } from "@/hooks/use-toast";
-import { Database, Settings, ExternalLink } from "lucide-react";
+import { Database, Settings, ExternalLink, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const StorageConfig = () => {
   const [isConfiguring, setIsConfiguring] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [detailedError, setDetailedError] = useState<string | null>(null);
   const [bucketDetails, setBucketDetails] = useState<any>(null);
+  const [lastAttempt, setLastAttempt] = useState<Date | null>(null);
   const { toast } = useToast();
 
-  const checkBucketExists = async () => {
+  useEffect(() => {
+    // Check bucket status on component mount
+    verifyBucket();
+  }, []);
+
+  const verifyBucket = async () => {
+    setIsVerifying(true);
     try {
+      console.log('Verifying bucket existence...');
       const { data, error } = await supabase.storage.getBucket('vaccine_records');
+      
       if (error) {
         console.log('Error checking bucket:', error);
+        setBucketDetails(null);
         return false;
       }
+      
       console.log('Bucket details:', data);
       setBucketDetails(data);
+      
+      // Check bucket contents
+      const { data: files, error: listError } = await supabase.storage
+        .from('vaccine_records')
+        .list();
+        
+      if (!listError) {
+        console.log('Files in bucket:', files);
+      }
+      
       return true;
     } catch (error) {
       console.error('Exception checking bucket:', error);
       return false;
+    } finally {
+      setIsVerifying(false);
     }
   };
 
   const handleConfigureStorage = async () => {
     setIsConfiguring(true);
     setDetailedError(null);
+    setLastAttempt(new Date());
     
     try {
       console.log("Starting storage configuration process");
@@ -39,14 +65,15 @@ const StorageConfig = () => {
       if (result.success) {
         console.log("Storage configuration succeeded:", result);
         
-        // Check if the bucket exists after configuration
-        const bucketExists = await checkBucketExists();
+        // Wait a bit and then check if the bucket exists after configuration
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        const bucketExists = await verifyBucket();
         
         toast({
           title: "Storage configured",
           description: bucketExists 
             ? "Vaccine records storage has been properly configured" 
-            : "Configuration succeeded, but the bucket may need manual verification",
+            : "Configuration completed, but the bucket needs verification",
         });
       } else {
         console.error("Configuration error:", result.error);
@@ -77,26 +104,48 @@ const StorageConfig = () => {
           <Database className="h-5 w-5 text-blue-600" />
           <h3 className="text-lg font-medium">Storage Configuration</h3>
         </div>
-        <Button 
-          onClick={handleConfigureStorage}
-          disabled={isConfiguring}
-          className="flex items-center gap-2"
-        >
-          <Settings className={`h-4 w-4 ${isConfiguring ? 'animate-spin' : ''}`} />
-          {isConfiguring ? "Configuring..." : "Configure Storage"}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={verifyBucket}
+            disabled={isVerifying || isConfiguring}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isVerifying ? 'animate-spin' : ''}`} />
+            {isVerifying ? "Checking..." : "Check Status"}
+          </Button>
+          <Button 
+            onClick={handleConfigureStorage}
+            disabled={isConfiguring}
+            className="flex items-center gap-2"
+          >
+            <Settings className={`h-4 w-4 ${isConfiguring ? 'animate-spin' : ''}`} />
+            {isConfiguring ? "Configuring..." : "Configure Storage"}
+          </Button>
+        </div>
       </div>
       <p className="mt-2 text-sm text-gray-600">
-        If you're experiencing issues with file uploads, click the button above to ensure proper storage permissions.
+        If you're experiencing issues with file uploads, click the "Configure Storage" button to ensure proper storage permissions.
       </p>
+      
+      {!bucketDetails && !isVerifying && (
+        <Alert className="mt-4 bg-amber-50 border-amber-200">
+          <AlertDescription className="text-amber-800">
+            No storage bucket detected. Click "Configure Storage" to create it.
+          </AlertDescription>
+        </Alert>
+      )}
       
       {bucketDetails && (
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <p className="text-sm font-medium text-blue-800">Bucket status:</p>
+          <p className="text-sm font-medium text-blue-800">Bucket detected:</p>
           <ul className="mt-1 text-xs text-blue-700">
             <li>Name: {bucketDetails.name}</li>
             <li>Public: {bucketDetails.public ? "Yes" : "No"}</li>
             <li>File size limit: {(bucketDetails.fileSizeLimit / 1024 / 1024).toFixed(1)}MB</li>
+            {lastAttempt && (
+              <li>Last configuration attempt: {lastAttempt.toLocaleTimeString()}</li>
+            )}
           </ul>
         </div>
       )}

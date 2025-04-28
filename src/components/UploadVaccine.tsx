@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Upload } from "lucide-react";
@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import CheckInLayout from "@/components/CheckInLayout";
 import Confetti from "@/components/Confetti";
 import { supabase } from "@/integrations/supabase/client";
+import { configureStorage } from "@/utils/configureStorage";
 
 const UploadVaccine = () => {
   const [searchParams] = useSearchParams();
@@ -17,8 +18,29 @@ const UploadVaccine = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [storageConfigured, setStorageConfigured] = useState(false);
+  const [isConfiguringStorage, setIsConfiguringStorage] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Pre-configure storage when component mounts
+  useEffect(() => {
+    const preConfigureStorage = async () => {
+      setIsConfiguringStorage(true);
+      try {
+        console.log("Pre-configuring storage on component mount");
+        const result = await configureStorage();
+        setStorageConfigured(result.success);
+        console.log("Storage pre-configuration result:", result);
+      } catch (error) {
+        console.error("Error pre-configuring storage:", error);
+      } finally {
+        setIsConfiguringStorage(false);
+      }
+    };
+    
+    preConfigureStorage();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -86,52 +108,74 @@ const UploadVaccine = () => {
       console.log("File size:", file.size, "bytes");
       console.log("File type:", file.type);
 
-      // Simulate upload progress
+      // Simulate initial upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
-          if (prev !== null && prev < 70) {
-            return prev + 10;
+          if (prev !== null && prev < 30) {
+            return prev + 5;
           }
           return prev;
         });
       }, 300);
 
-      // First ensure the bucket exists and is configured
-      const configResult = await supabase.functions.invoke("configure-storage", {
-        headers: { "Content-Type": "application/json" }
+      // Ensure storage is configured first
+      if (!storageConfigured) {
+        console.log("Storage not pre-configured, configuring now...");
+        setUploadProgress(10);
+        const configResult = await configureStorage();
+        
+        console.log("Storage configuration check:", configResult);
+        
+        if (!configResult.success) {
+          throw new Error("Failed to configure storage before upload");
+        }
+        
+        // Wait a moment for storage configuration to take effect
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setStorageConfigured(true);
+      }
+      
+      setUploadProgress(40);
+
+      // Upload file to Supabase Storage with explicit content type
+      // Create a URL for the file and get its content type
+      const fileBlob = new Blob([file], { type: file.type });
+      
+      // Using the lower-level API for better control
+      console.log("Creating signed URL for upload...");
+      const { data: signedURL, error: signedError } = await supabase.storage
+        .from('vaccine_records')
+        .createSignedUploadUrl(filePath);
+      
+      if (signedError) {
+        console.error("Error creating signed URL:", signedError);
+        throw new Error(`Failed to create signed URL: ${signedError.message}`);
+      }
+      
+      console.log("Got signed URL:", signedURL);
+      setUploadProgress(60);
+      
+      // Use the signed URL to upload the file
+      const uploadResponse = await fetch(signedURL.signedUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type,
+        },
+        body: fileBlob,
       });
       
-      console.log("Storage configuration check:", configResult);
-      
-      if (!configResult.data?.success) {
-        throw new Error("Failed to configure storage before upload");
+      if (!uploadResponse.ok) {
+        throw new Error(`HTTP upload error: ${uploadResponse.status}`);
       }
-      
-      setUploadProgress(75);
-
-      // Upload file to Supabase Storage with robust error handling
-      const { error: uploadError, data: uploadData } = await supabase.storage
-        .from("vaccine_records")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: true,
-          contentType: file.type // Explicitly set content type
-        });
 
       clearInterval(progressInterval);
-      
-      if (uploadError) {
-        console.error("Upload error details:", uploadError);
-        throw new Error(`Upload failed: ${uploadError.message}`);
-      }
-
-      setUploadProgress(85);
-      console.log("Upload successful:", uploadData);
+      setUploadProgress(80);
+      console.log("Upload successful using signed URL");
 
       // Get the public URL for the uploaded file
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("vaccine_records").getPublicUrl(filePath);
+      const { data: { publicUrl } } = supabase.storage
+        .from("vaccine_records")
+        .getPublicUrl(filePath);
 
       console.log("Public URL:", publicUrl);
       setUploadProgress(90);
@@ -195,11 +239,16 @@ const UploadVaccine = () => {
                 accept=".jpg,.jpeg,.png,.pdf"
                 onChange={handleFileChange}
                 className="max-w-xs border-mutts-primary/30 focus-visible:ring-mutts-primary"
-                disabled={isUploading}
+                disabled={isUploading || isConfiguringStorage}
               />
               <p className="mt-2 text-sm text-gray-500">
                 Accepts JPG, PNG, or PDF (max 10MB)
               </p>
+              {isConfiguringStorage && (
+                <p className="mt-1 text-xs text-blue-600 animate-pulse">
+                  Setting up secure storage...
+                </p>
+              )}
             </div>
 
             {uploadProgress !== null && (
@@ -231,10 +280,10 @@ const UploadVaccine = () => {
           <Button
             type="submit"
             className="w-full bg-mutts-secondary hover:bg-mutts-secondary/90 text-white rounded-xl h-12"
-            disabled={isUploading}
+            disabled={isUploading || isConfiguringStorage}
           >
-            {isUploading ? "Uploading..." : "Complete Check-In"}
-            <ArrowRight className="ml-2" />
+            {isUploading ? "Uploading..." : (isConfiguringStorage ? "Preparing..." : "Complete Check-In")}
+            {!isUploading && !isConfiguringStorage && <ArrowRight className="ml-2" />}
           </Button>
         </form>
       </CheckInLayout>
