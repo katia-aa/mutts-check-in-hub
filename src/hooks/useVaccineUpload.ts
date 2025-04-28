@@ -129,7 +129,9 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
         setIsConfiguringStorage(false);
       }
       
+      // Fix: Properly check for success/failure using type guard
       if (!uploadResult.success) {
+        // Now TypeScript knows uploadResult is of type UploadError here
         throw new Error(`All upload methods failed: ${uploadResult.error}`);
       }
       
@@ -180,7 +182,7 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
     }
   };
   
-  // Helper function for direct upload - updated return type to match expected format
+  // Helper function for direct upload
   const attemptDirectUpload = async (filePath: string, file: File): Promise<UploadResult> => {
     try {
       const { data, error } = await supabase.storage
@@ -195,11 +197,10 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
         return { success: false, error: error.message };
       }
       
-      // Fix: Match the expected return type structure
       return { 
         success: true, 
         data: {
-          id: data?.id || filePath, // Use filePath as id if not available
+          id: data?.id || filePath,
           path: data?.path || filePath,
           fullPath: filePath
         }
@@ -210,7 +211,7 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
     }
   };
   
-  // Helper function for signed URL upload - updated return type to match expected format
+  // Helper function for signed URL upload
   const attemptSignedUrlUpload = async (filePath: string, file: File): Promise<UploadResult> => {
     try {
       setUploadProgress(40);
@@ -245,11 +246,10 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
       }
       
       console.log("Signed URL upload successful");
-      // Fix: Match the expected return type structure
       return { 
         success: true, 
         data: {
-          id: token || filePath,  // Use token as id, fallback to filePath
+          id: token || filePath,
           path: filePath,
           fullPath: filePath
         }
