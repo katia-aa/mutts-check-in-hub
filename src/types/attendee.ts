@@ -7,4 +7,6 @@ export interface Attendee {
   eventbrite_id?: string;
   submissionTime?: string;
   signature_svg?: string | null;
+  vaccine_file_path?: string | null;
+  vaccine_file_url?: string | null;
 }

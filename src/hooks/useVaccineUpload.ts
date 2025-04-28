@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { configureStorage } from "@/utils/configureStorage";
@@ -78,38 +77,10 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
 
       setState(prev => ({ ...prev, uploadProgress: 20 }));
       
-      // First attempt: try upload via edge function
+      // Use edge function for upload
       let uploadResult = await attemptEdgeFunctionUpload(email, state.file);
       
-      // If edge function fails, try configuring storage and retry
       if (!uploadResult.success) {
-        console.log("First upload attempt failed, trying storage configuration");
-        setState(prev => ({ 
-          ...prev, 
-          isConfiguringStorage: true,
-          uploadProgress: 40 
-        }));
-        
-        const configResult = await configureStorage();
-        
-        if (!configResult.success) {
-          // Safely access error property
-          const errorMsg = 'error' in configResult ? configResult.error?.message || String(configResult.error) : 'Unknown configuration error';
-          throw new Error(`Failed to configure storage: ${errorMsg}`);
-        }
-        
-        setState(prev => ({ ...prev, uploadProgress: 60 }));
-        
-        // Wait for configuration to take effect
-        await new Promise(resolve => setTimeout(resolve, 8000));
-        
-        console.log("Storage configured, retrying upload...");
-        uploadResult = await attemptEdgeFunctionUpload(email, state.file);
-      }
-      
-      // Handle final upload result
-      if (!uploadResult.success) {
-        // This safely accesses the error property for error cases
         throw new Error(`Upload failed: ${'error' in uploadResult ? uploadResult.error : 'Unknown error occurred'}`);
       }
       

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { UploadResult } from "@/types/vaccineUpload";
 
@@ -142,22 +141,6 @@ export const attemptEdgeFunctionUpload = async (email: string, file: File): Prom
 };
 
 export const updateAttendeeRecord = async (email: string, filePath: string): Promise<void> => {
-  const { data: { publicUrl } } = supabase.storage
-    .from("vaccine_records")
-    .getPublicUrl(filePath);
-
-  const { error: updateError } = await supabase
-    .from("attendees")
-    .update({
-      vaccine_upload_status: true,
-      vaccine_file_path: filePath,
-      vaccine_file_url: publicUrl,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("email", email);
-
-  if (updateError) {
-    console.error("Database update error:", updateError);
-    throw new Error(`Database update failed: ${updateError.message}`);
-  }
+  // This is now handled by the edge function
+  console.log("Attendee record update is handled by edge function");
 };
