@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,9 +44,6 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
       }
 
       const eventbriteAttendees = response.data?.attendees || [];
-      let processedCount = 0;
-      let skippedCount = 0;
-      let groupTicketsCount = 0;
 
       if (eventbriteAttendees.length === 0) {
         console.warn("No attendees found in Eventbrite response");
@@ -64,17 +60,12 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
       }
 
       for (const attendee of eventbriteAttendees) {
-        // Check if this is a group purchase
-        const quantity = attendee.quantity || 1;
-        
         if (!attendee.profile || !attendee.profile.email) {
           console.warn("Skipping attendee without email:", attendee);
-          skippedCount++;
           continue;
         }
 
-        // Create entry for the primary attendee (ticket purchaser)
-        const { error: mainError } = await supabase.from("attendees").upsert(
+        const { error } = await supabase.from("attendees").upsert(
           {
             email: attendee.profile.email,
             name: `${attendee.profile.first_name} ${attendee.profile.last_name}`,
@@ -86,11 +77,11 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
           }
         );
 
-        if (mainError) {
-          console.error("Error syncing main attendee:", mainError);
+        if (error) {
+          console.error("Error syncing attendee:", error);
           if (
-            mainError.code === "42501" ||
-            mainError.message?.includes("row-level security")
+            error.code === "42501" ||
+            error.message?.includes("row-level security")
           ) {
             setRlsError(true);
             setErrorMessage(
@@ -98,61 +89,13 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
             );
             break;
           }
-          continue;
-        }
-        
-        processedCount++;
-        
-        // If this is a group purchase with multiple tickets
-        if (quantity > 1) {
-          groupTicketsCount += (quantity - 1);
-          
-          // Create generic entries for additional guests if needed
-          for (let i = 1; i < quantity; i++) {
-            const guestEmail = `guest${i}_for_${attendee.profile.email}`;
-            const guestName = `Guest ${i} of ${attendee.profile.first_name} ${attendee.profile.last_name}`;
-            
-            const { error: guestError } = await supabase.from("attendees").upsert(
-              {
-                email: guestEmail,
-                name: guestName,
-                eventbrite_id: `${attendee.id}_guest${i}`,
-                vaccine_upload_status: false,
-              },
-              {
-                onConflict: "email",
-              }
-            );
-            
-            if (guestError) {
-              console.error(`Error syncing guest ${i}:`, guestError);
-              if (
-                guestError.code === "42501" ||
-                guestError.message?.includes("row-level security")
-              ) {
-                setRlsError(true);
-                setErrorMessage(
-                  "Row Level Security policy violation: The database is preventing insertion of guest attendee data."
-                );
-                break;
-              }
-            } else {
-              processedCount++;
-            }
-          }
         }
       }
 
       await onSyncComplete();
-      
-      // Enhanced success message with more details
-      const successMessage = groupTicketsCount > 0 
-        ? `Synced ${processedCount} attendees (including ${groupTicketsCount} guests from group purchases)`
-        : `Synced ${processedCount} attendees`;
-        
       toast({
         title: "Success",
-        description: successMessage,
+        description: "Attendees synced with Eventbrite",
       });
     } catch (error: any) {
       console.error("Error fetching Eventbrite attendees:", error);

@@ -99,41 +99,11 @@ serve(async (req) => {
       );
     }
     
-    // Enhance the attendee data with ticket quantity information
-    const enhancedAttendees = data.attendees.map(attendee => {
-      // Extract quantity information if available
-      const ticket = attendee.ticket_class_name || '';
-      let quantity = 1;
-      
-      // Try to extract quantity from the attendee data
-      if (attendee.ticket && attendee.ticket.quantity) {
-        quantity = parseInt(attendee.ticket.quantity, 10) || 1;
-      } else if (attendee.quantity) {
-        quantity = parseInt(attendee.quantity, 10) || 1;
-      }
-      
-      // If no direct quantity info, try to infer from ticket name
-      if (quantity === 1 && ticket.toLowerCase().includes('group')) {
-        // If ticket name contains 'group', default to 2 if we can't find a specific number
-        const quantityMatch = ticket.match(/(\d+)\s*person/i);
-        if (quantityMatch && quantityMatch[1]) {
-          quantity = parseInt(quantityMatch[1], 10) || 2;
-        } else {
-          quantity = 2; // Default assumption for group tickets
-        }
-      }
-      
-      return {
-        ...attendee,
-        quantity: quantity
-      };
-    });
-    
     console.log(
-      `Successfully fetched ${data.attendees.length} attendees from Eventbrite (${enhancedAttendees.filter(a => a.quantity > 1).length} group purchases)`
+      `Successfully fetched ${data.attendees.length} attendees from Eventbrite`
     );
     
-    return new Response(JSON.stringify({ ...data, attendees: enhancedAttendees }), {
+    return new Response(JSON.stringify(data), {
       headers: {
         ...corsHeaders,
         "Content-Type": "application/json",
