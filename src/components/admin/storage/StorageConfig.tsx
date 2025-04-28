@@ -1,12 +1,13 @@
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { configureStorage } from "@/utils/configureStorage";
 import { useToast } from "@/hooks/use-toast";
-import { Database, Settings, ExternalLink, RefreshCw, AlertTriangle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Database } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { configureStorage } from "@/utils/configureStorage";
+import { supabase } from "@/integrations/supabase/client";
+import StatusAlert from "./StatusAlert";
+import ErrorDetails from "./ErrorDetails";
+import ConfigButtons from "./ConfigButtons";
 
 const StorageConfig = () => {
   const [isConfiguring, setIsConfiguring] = useState(false);
@@ -83,7 +84,7 @@ const StorageConfig = () => {
       setIsVerifying(false);
     }
   };
-  
+
   const testUpload = async () => {
     try {
       // Create a small test blob
@@ -136,7 +137,6 @@ const StorageConfig = () => {
       if (result.success) {
         console.log("Storage configuration succeeded:", result);
         
-        // Wait longer to ensure the bucket is properly propagated
         toast({
           title: "Storage configuration in progress",
           description: "Please wait while we verify the configuration..."
@@ -182,87 +182,28 @@ const StorageConfig = () => {
           <Database className="h-5 w-5 text-blue-600" />
           <h3 className="text-lg font-medium">Storage Configuration</h3>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            onClick={verifyBucket}
-            disabled={isVerifying || isConfiguring}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isVerifying ? 'animate-spin' : ''}`} />
-            {isVerifying ? "Checking..." : "Check Status"}
-          </Button>
-          <Button 
-            onClick={handleConfigureStorage}
-            disabled={isConfiguring}
-            className="flex items-center gap-2"
-          >
-            <Settings className={`h-4 w-4 ${isConfiguring ? 'animate-spin' : ''}`} />
-            {isConfiguring ? "Configuring..." : "Configure Storage"}
-          </Button>
-        </div>
+        <ConfigButtons 
+          onVerify={verifyBucket}
+          onConfigure={handleConfigureStorage}
+          isVerifying={isVerifying}
+          isConfiguring={isConfiguring}
+        />
       </div>
       
       <p className="mt-2 text-sm text-gray-600">
         This tool configures storage for vaccine records. If uploads are failing, click the "Configure Storage" button.
       </p>
       
-      {uploadStatus === 'success' && bucketDetails && (
-        <Alert className="mt-4 bg-green-50 border-green-200">
-          <AlertTriangle className="h-4 w-4 text-green-600" />
-          <AlertTitle className="text-green-800">Storage is operational</AlertTitle>
-          <AlertDescription className="text-green-700">
-            Bucket is properly configured and file uploads are working.
-          </AlertDescription>
-          <div className="mt-2 p-2 bg-white rounded text-xs text-gray-600">
-            <p><strong>Bucket:</strong> {bucketDetails.name}</p>
-            <p><strong>Public:</strong> {bucketDetails.public ? "Yes" : "No"}</p>
-            <p><strong>Size limit:</strong> {(bucketDetails.file_size_limit / 1024 / 1024).toFixed(1)}MB</p>
-          </div>
-        </Alert>
-      )}
+      <StatusAlert 
+        status={uploadStatus}
+        bucketDetails={bucketDetails}
+        detailedError={detailedError}
+      />
       
-      {!bucketDetails && !isVerifying && (
-        <Alert className="mt-4 bg-amber-50 border-amber-200">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-800">Storage configuration required</AlertTitle>
-          <AlertDescription className="text-amber-700">
-            No storage bucket detected. Click "Configure Storage" to create it.
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {uploadStatus === 'error' && (
-        <Alert className="mt-4 bg-red-50 border-red-200">
-          <AlertTriangle className="h-4 w-4 text-red-600" />
-          <AlertTitle className="text-red-800">Storage is not working correctly</AlertTitle>
-          <AlertDescription className="text-red-700">
-            The storage bucket exists but there are issues with uploads.
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {detailedError && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-sm font-medium text-red-800">Error details:</p>
-          <p className="text-xs font-mono mt-1 text-red-700 break-all whitespace-pre-wrap">{detailedError}</p>
-          <div className="mt-2">
-            <a 
-              href="https://supabase.com/dashboard/project/hpjlxjfcfyjjpzbsydue/storage/buckets" 
-              target="_blank" 
-              className="text-xs flex items-center gap-1 text-blue-600 hover:underline"
-            >
-              Manage storage in Supabase <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-        </div>
-      )}
-      
-      {lastAttempt && (
-        <p className="mt-2 text-xs text-gray-500">
-          Last configuration attempt: {lastAttempt.toLocaleTimeString()}
-        </p>
-      )}
+      <ErrorDetails 
+        error={detailedError}
+        lastAttempt={lastAttempt}
+      />
     </Card>
   );
 };
