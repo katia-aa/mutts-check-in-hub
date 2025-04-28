@@ -80,120 +80,42 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
 
       setUploadProgress(10);
       
-      // First, let's verify if the bucket exists
-      let bucketVerified = false;
-      try {
-        const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('vaccine_records');
-        if (!bucketError && bucketData) {
-          console.log("Bucket exists:", bucketData);
-          bucketVerified = true;
-        } else {
-          console.log("Bucket check failed:", bucketError);
-        }
-      } catch (bucketCheckError) {
-        console.error("Error checking bucket:", bucketCheckError);
-      }
+      // Try direct upload first
+      let uploadResult = await attemptDirectUpload(filePath, file);
       
-      // Try uploading first
-      let uploadError = null;
-      let uploadData = null;
-      
-      if (bucketVerified) {
-        try {
-          setUploadProgress(20);
-          const result = await supabase.storage
-            .from('vaccine_records')
-            .upload(filePath, file, {
-              upsert: true,
-              contentType: file.type
-            });
-            
-          uploadError = result.error;
-          uploadData = result.data;
-          
-          if (!uploadError) {
-            console.log("Upload successful without configuration:", uploadData);
-            setUploadProgress(50);
-          }
-        } catch (initialError) {
-          console.log("Initial upload failed:", initialError);
-          uploadError = initialError;
-        }
-      }
-      
-      // If upload failed or bucket doesn't exist, try to configure storage first
-      if (!bucketVerified || uploadError) {
-        console.log("Upload failed or bucket not verified, configuring storage first");
+      // If direct upload failed, try configuration and retry
+      if (!uploadResult.success) {
         setIsConfiguringStorage(true);
-        setUploadProgress(25);
+        setUploadProgress(20);
         
+        console.log("Initial upload failed, configuring storage...");
         const configResult = await configureStorage();
-        setIsConfiguringStorage(false);
         
         if (!configResult.success) {
           throw new Error(`Failed to configure storage: ${configResult.error?.message || "Unknown error"}`);
         }
         
-        setUploadProgress(40);
+        setUploadProgress(30);
+        // Wait longer for storage configuration to propagate
+        await new Promise(resolve => setTimeout(resolve, 8000));
         
-        // Wait a bit longer to ensure the bucket is fully configured
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        console.log("Storage configured, retrying upload...");
+        uploadResult = await attemptDirectUpload(filePath, file);
         
-        // Try upload again after configuration
-        const { data, error } = await supabase.storage
-          .from('vaccine_records')
-          .upload(filePath, file, {
-            upsert: true,
-            contentType: file.type
-          });
-          
-        if (error) {
-          console.error("Upload failed after configuration:", error);
-          
-          // If the normal method failed, try using a signed URL as a last resort
-          try {
-            setUploadProgress(45);
-            console.log("Trying alternative upload method...");
-            
-            const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-              .from('vaccine_records')
-              .createSignedUploadUrl(filePath);
-              
-            if (signedUrlError) {
-              throw new Error(`Signed URL creation failed: ${signedUrlError.message}`);
-            }
-            
-            // Corrected property name: signedUrl (lowercase u) instead of signedURL
-            const { signedUrl, token } = signedUrlData;
-            
-            setUploadProgress(50);
-            
-            // Upload directly to the signed URL
-            const uploadResponse = await fetch(signedUrl, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': file.type,
-                'x-upsert': 'true'
-              },
-              body: file
-            });
-            
-            if (!uploadResponse.ok) {
-              throw new Error(`Signed URL upload failed: ${uploadResponse.statusText}`);
-            }
-            
-            console.log("Upload successful via signed URL");
-            uploadData = { path: filePath };
-          } catch (signedUrlError) {
-            console.error("Even signed URL upload failed:", signedUrlError);
-            throw new Error(`All upload methods failed: ${error.message}`);
-          }
-        } else {
-          uploadData = data;
+        // If still failing, try with signed URL
+        if (!uploadResult.success) {
+          console.log("Direct upload still failing, trying with signed URL...");
+          uploadResult = await attemptSignedUrlUpload(filePath, file);
         }
+        
+        setIsConfiguringStorage(false);
       }
       
-      console.log("Upload successful:", uploadData);
+      if (!uploadResult.success) {
+        throw new Error(`All upload methods failed: ${uploadResult.error}`);
+      }
+      
+      console.log("Upload successful:", uploadResult.data);
       setUploadProgress(70);
 
       const { data: { publicUrl } } = supabase.storage
@@ -236,6 +158,71 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
       });
     } finally {
       setIsUploading(false);
+      setIsConfiguringStorage(false);
+    }
+  };
+  
+  // Helper function for direct upload
+  const attemptDirectUpload = async (filePath: string, file: File) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('vaccine_records')
+        .upload(filePath, file, {
+          upsert: true,
+          contentType: file.type
+        });
+        
+      if (error) {
+        console.error("Direct upload failed:", error);
+        return { success: false, error: error.message };
+      }
+      
+      return { success: true, data };
+    } catch (uploadError: any) {
+      console.error("Exception during direct upload:", uploadError);
+      return { success: false, error: uploadError.message || String(uploadError) };
+    }
+  };
+  
+  // Helper function for signed URL upload
+  const attemptSignedUrlUpload = async (filePath: string, file: File) => {
+    try {
+      setUploadProgress(40);
+      
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from('vaccine_records')
+        .createSignedUploadUrl(filePath);
+        
+      if (signedUrlError) {
+        console.error("Signed URL creation failed:", signedUrlError);
+        return { success: false, error: signedUrlError.message };
+      }
+      
+      // Use the correct property name 'signedUrl' (not signedURL)
+      const { signedUrl, token } = signedUrlData;
+      
+      setUploadProgress(50);
+      
+      // Upload directly to the signed URL
+      const uploadResponse = await fetch(signedUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type,
+          'x-upsert': 'true'
+        },
+        body: file
+      });
+      
+      if (!uploadResponse.ok) {
+        console.error("Signed URL upload failed:", uploadResponse.statusText);
+        return { success: false, error: `HTTP error: ${uploadResponse.status} ${uploadResponse.statusText}` };
+      }
+      
+      console.log("Signed URL upload successful");
+      return { success: true, data: { path: filePath } };
+    } catch (signedUrlError: any) {
+      console.error("Exception during signed URL upload:", signedUrlError);
+      return { success: false, error: signedUrlError.message || String(signedUrlError) };
     }
   };
 

@@ -30,49 +30,50 @@ const StorageConfig = () => {
     try {
       console.log('Verifying bucket existence...');
       
-      // Instead of using protected properties, use Supabase Storage API directly
-      try {
-        // First approach: Check if we can list buckets
-        const { data: bucketsData, error: bucketsError } = await supabase.storage.listBuckets();
-        
-        if (!bucketsError) {
-          const vaccineBucket = bucketsData?.find(bucket => bucket.name === 'vaccine_records');
-          if (vaccineBucket) {
-            console.log('Bucket found via listBuckets:', vaccineBucket);
-            setBucketDetails(vaccineBucket);
-            
-            // Now test if we can upload a file to validate permissions
-            await testUpload();
-            return true;
-          } else {
-            console.log('Bucket not found in list');
-          }
+      // First approach: Check if we can list buckets
+      const { data: bucketsData, error: bucketsError } = await supabase.storage.listBuckets();
+      
+      if (!bucketsError) {
+        console.log('Bucket list retrieved:', bucketsData);
+        const vaccineBucket = bucketsData?.find(bucket => bucket.name === 'vaccine_records');
+        if (vaccineBucket) {
+          console.log('Bucket found in list:', vaccineBucket);
+          setBucketDetails(vaccineBucket);
+          
+          // Now test if we can upload a file to validate permissions
+          await testUpload();
+          return true;
         } else {
-          console.log('Error listing buckets:', bucketsError);
+          console.log('Bucket not found in list');
         }
-      } catch (restError) {
-        console.error('Error checking bucket via REST:', restError);
+      } else {
+        console.log('Error listing buckets:', bucketsError);
       }
       
-      // Fallback to standard Supabase client
-      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('vaccine_records');
-      
-      if (bucketError) {
-        console.log('Error checking bucket with standard client:', bucketError);
+      // Fallback to direct bucket check
+      try {
+        const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('vaccine_records');
         
-        // If we get here and still have an error, the bucket likely doesn't exist
-        setBucketDetails(null);
-        setDetailedError(`Storage not configured: ${bucketError.message}`);
+        if (bucketError) {
+          console.log('Error checking bucket directly:', bucketError);
+          setBucketDetails(null);
+          setDetailedError(`Storage not configured: ${bucketError.message}`);
+          setUploadStatus('error');
+          return false;
+        }
+        
+        console.log('Bucket details retrieved directly:', bucketData);
+        setBucketDetails(bucketData);
+        
+        // Now test if we can upload a file
+        await testUpload();
+        return true;
+      } catch (bucketCheckError) {
+        console.error('Error during bucket check:', bucketCheckError);
+        setDetailedError(`Error checking bucket: ${bucketCheckError instanceof Error ? bucketCheckError.message : String(bucketCheckError)}`);
         setUploadStatus('error');
         return false;
       }
-      
-      console.log('Bucket details retrieved:', bucketData);
-      setBucketDetails(bucketData);
-      
-      // Now test if we can upload a file
-      await testUpload();
-      return true;
     } catch (error: any) {
       console.error('Exception verifying storage:', error);
       setDetailedError(`Exception verifying storage: ${error.message}`);
@@ -88,6 +89,8 @@ const StorageConfig = () => {
       // Create a small test blob
       const testBlob = new Blob(['test'], { type: 'text/plain' });
       const fileName = `test-${Date.now()}.txt`;
+      
+      console.log('Attempting test upload to verify permissions...');
       
       // Try to upload a test file with the correct content type
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -133,8 +136,15 @@ const StorageConfig = () => {
       if (result.success) {
         console.log("Storage configuration succeeded:", result);
         
-        // Wait and then check if the bucket exists after configuration
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Longer wait to ensure propagation
+        // Wait longer to ensure the bucket is properly propagated
+        toast({
+          title: "Storage configuration in progress",
+          description: "Please wait while we verify the configuration..."
+        });
+        
+        // Wait 8 seconds for propagation of the changes
+        await new Promise(resolve => setTimeout(resolve, 8000)); 
+        
         const bucketVerified = await verifyBucket();
         
         toast({
