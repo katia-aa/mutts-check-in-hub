@@ -112,7 +112,8 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
       }
       
       if (!uploadResult.success) {
-        throw new Error(`All upload methods failed: ${uploadResult.error}`);
+        // Fixed here: Access error only on UploadError type
+        throw new Error(`All upload methods failed: ${!uploadResult.success ? uploadResult.error : "Unknown error"}`);
       }
       
       console.log("Upload successful:", uploadResult.data);
