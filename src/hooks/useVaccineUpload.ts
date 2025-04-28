@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,6 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
   const [preview, setPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [storageConfigured, setStorageConfigured] = useState(false);
   const [isConfiguringStorage, setIsConfiguringStorage] = useState(false);
   const { toast } = useToast();
 
@@ -74,43 +74,63 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
       const filePath = `${safeEmail}/${fileName}`;
 
       console.log("Submitting file:", file);
-      console.log("Upload starting for file:", file.name);
       console.log("To path:", filePath);
       console.log("File size:", file.size, "bytes");
       console.log("File type:", file.type);
 
       setUploadProgress(10);
       
-      if (!storageConfigured) {
-        console.log("Storage not pre-configured, configuring now...");
-        setIsConfiguringStorage(true);
-        const configResult = await configureStorage();
-        
-        console.log("Storage configuration check:", configResult);
-        
-        if (!configResult.success) {
-          throw new Error("Failed to configure storage before upload");
-        }
-        
-        setIsConfiguringStorage(false);
-        setStorageConfigured(true);
-        setUploadProgress(30);
-      }
-
-      setUploadProgress(50);
-      const { data, error } = await supabase.storage
-        .from('vaccine_records')
-        .upload(filePath, file, {
-          upsert: true,
-          contentType: file.type
-        });
-
-      if (error) {
-        console.error("Upload error:", error);
-        throw new Error(`Upload failed: ${error.message}`);
+      // Try uploading first
+      let uploadError = null;
+      let uploadData = null;
+      
+      try {
+        const result = await supabase.storage
+          .from('vaccine_records')
+          .upload(filePath, file, {
+            upsert: true,
+            contentType: file.type
+          });
+          
+        uploadError = result.error;
+        uploadData = result.data;
+      } catch (initialError) {
+        console.log("Initial upload failed, will try configuring storage:", initialError);
+        uploadError = initialError;
       }
       
-      console.log("Upload successful:", data);
+      // If upload failed, try to configure storage first
+      if (uploadError) {
+        console.log("Upload failed, configuring storage first:", uploadError);
+        setIsConfiguringStorage(true);
+        setUploadProgress(20);
+        
+        const configResult = await configureStorage();
+        setIsConfiguringStorage(false);
+        
+        if (!configResult.success) {
+          throw new Error(`Failed to configure storage: ${configResult.error?.message || "Unknown error"}`);
+        }
+        
+        setUploadProgress(40);
+        
+        // Try upload again after configuration
+        const { data, error } = await supabase.storage
+          .from('vaccine_records')
+          .upload(filePath, file, {
+            upsert: true,
+            contentType: file.type
+          });
+          
+        if (error) {
+          console.error("Upload failed after configuration:", error);
+          throw new Error(`Upload failed: ${error.message}`);
+        }
+        
+        uploadData = data;
+      }
+      
+      console.log("Upload successful:", uploadData);
       setUploadProgress(70);
 
       const { data: { publicUrl } } = supabase.storage

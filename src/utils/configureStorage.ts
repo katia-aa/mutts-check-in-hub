@@ -24,7 +24,6 @@ export async function configureStorage() {
     console.log("Storage configuration result:", data);
     
     // After the edge function has run, wait a moment to ensure the bucket is registered
-    // This is important as there may be a slight delay in propagation
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     return { success: true, data };
