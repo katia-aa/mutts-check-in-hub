@@ -1,0 +1,11 @@
+
+/* Hide any Lovable badge that might be present */
+[class*="lovable-badge"],
+[id*="lovable-badge"],
+[class*="gpteng"],
+[id*="gpteng"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
