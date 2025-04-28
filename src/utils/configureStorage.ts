@@ -22,6 +22,27 @@ export async function configureStorage() {
       return { success: false, error };
     }
     
+    // Check if we can access the bucket after configuration
+    const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('vaccine_records');
+    
+    if (bucketError) {
+      console.error("Error accessing bucket after configuration:", bucketError);
+      // Continue with the function execution, don't return an error here
+    } else {
+      console.log("Bucket verification successful:", bucketData);
+      
+      // Check if we can list files in the bucket
+      const { data: listData, error: listError } = await supabase.storage
+        .from('vaccine_records')
+        .list();
+        
+      if (listError) {
+        console.error("Error listing bucket contents:", listError);
+      } else {
+        console.log("Bucket contents:", listData);
+      }
+    }
+    
     console.log("Storage configuration result:", data);
     return { success: true, data };
   } catch (e) {

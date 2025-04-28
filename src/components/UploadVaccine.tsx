@@ -35,6 +35,7 @@ const UploadVaccine = () => {
     }
 
     setFile(selectedFile);
+    console.log("Selected file:", selectedFile);
 
     if (selectedFile.type.startsWith("image/")) {
       const reader = new FileReader();
@@ -79,6 +80,7 @@ const UploadVaccine = () => {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${safeEmail}/${fileName}`;
 
+      console.log("Submitting file:", file);
       console.log("Upload starting for file:", file.name);
       console.log("To path:", filePath);
       console.log("File size:", file.size, "bytes");
@@ -87,19 +89,33 @@ const UploadVaccine = () => {
       // Simulate upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
-          if (prev !== null && prev < 90) {
+          if (prev !== null && prev < 70) {
             return prev + 10;
           }
           return prev;
         });
       }, 300);
 
-      // Upload file to Supabase Storage
+      // First ensure the bucket exists and is configured
+      const configResult = await supabase.functions.invoke("configure-storage", {
+        headers: { "Content-Type": "application/json" }
+      });
+      
+      console.log("Storage configuration check:", configResult);
+      
+      if (!configResult.data?.success) {
+        throw new Error("Failed to configure storage before upload");
+      }
+      
+      setUploadProgress(75);
+
+      // Upload file to Supabase Storage with robust error handling
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from("vaccine_records")
         .upload(filePath, file, {
           cacheControl: "3600",
-          upsert: true, // Changed to true to overwrite if exists
+          upsert: true,
+          contentType: file.type // Explicitly set content type
         });
 
       clearInterval(progressInterval);
@@ -109,7 +125,7 @@ const UploadVaccine = () => {
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
-      setUploadProgress(95);
+      setUploadProgress(85);
       console.log("Upload successful:", uploadData);
 
       // Get the public URL for the uploaded file
@@ -118,7 +134,7 @@ const UploadVaccine = () => {
       } = supabase.storage.from("vaccine_records").getPublicUrl(filePath);
 
       console.log("Public URL:", publicUrl);
-      setUploadProgress(98);
+      setUploadProgress(90);
 
       // Update attendee record with file information
       const { error: updateError } = await supabase
@@ -154,7 +170,7 @@ const UploadVaccine = () => {
       console.error("Error uploading vaccine record:", error);
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Upload Error",
         description: error.message || "There was an error uploading your vaccine record. Please try again.",
       });
     } finally {

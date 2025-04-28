@@ -74,23 +74,43 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Instead of using create_storage_policy RPC, directly update policies
-    console.log('Setting up storage policies directly');
+    // Create public policy for the bucket using SQL
+    console.log('Setting up storage policies using SQL');
     
     try {
-      // Allow public read access
-      const { error: selectError } = await supabaseAdmin
-        .storage
-        .from('vaccine_records')
-        .setPublic();
+      const { error: policyError } = await supabaseAdmin.rpc('create_storage_policy', {
+        bucket_name: 'vaccine_records',
+      });
 
-      if (selectError) {
-        console.error('Error setting bucket public:', selectError);
+      if (policyError) {
+        console.error('Error setting policy via RPC:', policyError);
+        
+        // Attempt direct SQL for policies if the RPC fails
+        const { error: sqlError } = await supabaseAdmin.rpc('execute_sql', {
+          sql_statement: `
+            -- Allow public read access
+            CREATE POLICY IF NOT EXISTS "Public Access" 
+            ON storage.objects FOR SELECT 
+            USING (bucket_id = 'vaccine_records');
+            
+            -- Allow authenticated users to insert
+            CREATE POLICY IF NOT EXISTS "Allow Uploads" 
+            ON storage.objects FOR INSERT 
+            TO authenticated, anon, service_role
+            WITH CHECK (bucket_id = 'vaccine_records');
+          `
+        });
+        
+        if (sqlError) {
+          console.error('Error executing direct SQL policies:', sqlError);
+        } else {
+          console.log('Successfully set policies via direct SQL');
+        }
       } else {
-        console.log('Successfully set bucket to public');
+        console.log('Successfully set policies via RPC');
       }
     } catch (policyError) {
-      console.error('Error setting public policy:', policyError);
+      console.error('Error setting policies:', policyError);
     }
 
     return new Response(JSON.stringify({ 
