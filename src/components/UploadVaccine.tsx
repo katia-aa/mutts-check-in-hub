@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const UploadVaccine = () => {
   const [searchParams] = useSearchParams();
-  const email = searchParams.get('email');
+  const email = searchParams.get("email");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -25,7 +24,7 @@ const UploadVaccine = () => {
 
     setFile(selectedFile);
 
-    if (selectedFile.type.startsWith('image/')) {
+    if (selectedFile.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result as string);
@@ -60,23 +59,34 @@ const UploadVaccine = () => {
 
     try {
       // Upload file to Supabase Storage
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${email}/${Date.now()}.${fileExt}`;
+      const filePath = `vaccine_records/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('vaccine_records')
-        .upload(fileName, file);
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from("vaccine_records")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
 
       if (uploadError) throw uploadError;
 
-      // Update attendee record
+      // Get the public URL for the uploaded file
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("vaccine_records").getPublicUrl(fileName);
+
+      // Update attendee record with file information
       const { error: updateError } = await supabase
-        .from('attendees')
-        .update({ 
+        .from("attendees")
+        .update({
           vaccine_upload_status: true,
-          updated_at: new Date().toISOString()
+          vaccine_file_path: filePath,
+          vaccine_file_url: publicUrl,
+          updated_at: new Date().toISOString(),
         })
-        .eq('email', email);
+        .eq("email", email);
 
       if (updateError) throw updateError;
 
@@ -88,14 +98,15 @@ const UploadVaccine = () => {
       });
 
       setTimeout(() => {
-        navigate('/');
+        navigate("/");
       }, 4000);
     } catch (error) {
-      console.error('Error uploading vaccine record:', error);
+      console.error("Error uploading vaccine record:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "There was an error uploading your vaccine record. Please try again.",
+        description:
+          "There was an error uploading your vaccine record. Please try again.",
       });
     } finally {
       setIsUploading(false);
@@ -105,7 +116,7 @@ const UploadVaccine = () => {
   return (
     <>
       {showConfetti && <Confetti />}
-      <CheckInLayout 
+      <CheckInLayout
         step={3}
         title="Last Step!"
         subtitle="Upload your pup's vaccine record or a photo of it, and you're good to go"
@@ -125,7 +136,7 @@ const UploadVaccine = () => {
                 Accepts JPG, PNG, or PDF
               </p>
             </div>
-            
+
             {preview && (
               <div className="mt-4 flex justify-center animate-fade-in">
                 <img
@@ -135,7 +146,7 @@ const UploadVaccine = () => {
                 />
               </div>
             )}
-            
+
             {file && !preview && (
               <div className="mt-4 text-center text-sm text-gray-600 animate-fade-in">
                 File selected: {file.name}
