@@ -1,107 +1,69 @@
 
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
+import { ArrowRight } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Upload } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
 import CheckInLayout from "@/components/CheckInLayout";
 import Confetti from "@/components/Confetti";
+import UploadZone from "@/components/vaccine/UploadZone";
+import UploadProgress from "@/components/vaccine/UploadProgress";
+import FilePreview from "@/components/vaccine/FilePreview";
+import { useVaccineUpload } from "@/hooks/useVaccineUpload";
 
 const UploadVaccine = () => {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const email = searchParams.get("email");
   const [showConfetti, setShowConfetti] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
-    setFile(selectedFile);
-
-    if (selectedFile.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
-    } else {
-      setPreview(null);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!file) {
-      toast({
-        variant: "destructive",
-        title: "Oops! Missing vaccine record",
-        description: "Please upload your pup's vaccine record first",
-      });
-      return;
-    }
-
-    console.log("Submitting file:", file);
+  const handleUploadSuccess = () => {
     setShowConfetti(true);
-
-    toast({
-      title: "Yay! You're all set! 🎉",
-      description: "Can't wait to see you and your pup at the event!",
-    });
-
     setTimeout(() => {
-      navigate('/');
+      navigate("/");
     }, 4000);
   };
+
+  const {
+    file,
+    preview,
+    isUploading,
+    uploadProgress,
+    isConfiguringStorage,
+    handleFileChange,
+    handleSubmit,
+  } = useVaccineUpload({
+    email,
+    onUploadSuccess: handleUploadSuccess,
+  });
 
   return (
     <>
       {showConfetti && <Confetti />}
-      <CheckInLayout 
+      <CheckInLayout
         step={3}
         title="Last Step!"
         subtitle="Upload your pup's vaccine record and you're good to go"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
-            <div className="flex flex-col items-center p-6 border-2 border-dashed border-mutts-primary/30 rounded-xl bg-white/70 hover:border-mutts-primary/50 transition-colors">
-              <Upload className="h-8 w-8 mb-2 text-mutts-primary" />
-              <Input
-                type="file"
-                accept=".jpg,.jpeg,.png,.pdf"
-                onChange={handleFileChange}
-                className="max-w-xs border-mutts-primary/30 focus-visible:ring-mutts-primary"
-              />
-              <p className="mt-2 text-sm text-gray-500">
-                Accepts JPG, PNG, or PDF
-              </p>
-            </div>
+            <UploadZone
+              onFileChange={handleFileChange}
+              isDisabled={isUploading}
+              isConfiguringStorage={isConfiguringStorage}
+            />
             
-            {preview && (
-              <div className="mt-4 flex justify-center animate-fade-in">
-                <img
-                  src={preview}
-                  alt="Preview"
-                  className="max-w-xs max-h-48 object-contain rounded-lg border border-mutts-primary/20"
-                />
-              </div>
-            )}
+            <UploadProgress progress={uploadProgress} />
             
-            {file && !preview && (
-              <div className="mt-4 text-center text-sm text-gray-600 animate-fade-in">
-                File selected: {file.name}
-              </div>
-            )}
+            <FilePreview file={file} previewUrl={preview} />
           </div>
 
           <Button
             type="submit"
             className="w-full bg-mutts-secondary hover:bg-mutts-secondary/90 text-white rounded-xl h-12"
+            disabled={isUploading || isConfiguringStorage || !file}
           >
-            Complete Check-In
-            <ArrowRight className="ml-2" />
+            {isUploading ? "Uploading..." : (isConfiguringStorage ? "Preparing..." : "Complete Check-In")}
+            {!isUploading && !isConfiguringStorage && <ArrowRight className="ml-2" />}
           </Button>
         </form>
       </CheckInLayout>
