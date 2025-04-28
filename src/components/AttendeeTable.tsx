@@ -1,7 +1,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Attendee } from "@/types/attendee";
-import { CheckCircle, AlertTriangle } from "lucide-react";
+import { CheckCircle, AlertTriangle, Users } from "lucide-react";
 
 interface AttendeeTableProps {
   data: Attendee[];
@@ -33,8 +33,8 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead>Name</TableHead>
+            <TableHead>Name/Email</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Details</TableHead>
           </TableRow>
@@ -42,8 +42,26 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
         <TableBody>
           {data.map((attendee) => (
             <TableRow key={attendee.id}>
-              <TableCell>{attendee.email}</TableCell>
-              <TableCell>{attendee.name || "-"}</TableCell>
+              <TableCell>
+                <div>
+                  <div className="font-medium">
+                    {attendee.name || attendee.email}
+                  </div>
+                  {attendee.is_guest ? (
+                    <div className="text-sm text-gray-500">
+                      Guest of: {attendee.parent_ticket_email}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">{attendee.email}</div>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-gray-500" />
+                  <span>{attendee.is_guest ? "Guest" : "Ticket Holder"}</span>
+                </div>
+              </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
                   {getStatusIcon(attendee)}

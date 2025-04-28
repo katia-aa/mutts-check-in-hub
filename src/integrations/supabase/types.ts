@@ -14,8 +14,11 @@ export type Database = {
           created_at: string | null
           email: string
           eventbrite_id: string | null
+          guest_name: string | null
           id: string
+          is_guest: boolean | null
           name: string | null
+          parent_ticket_email: string | null
           signature_svg: string | null
           updated_at: string | null
           vaccine_file_path: string | null
@@ -26,8 +29,11 @@ export type Database = {
           created_at?: string | null
           email: string
           eventbrite_id?: string | null
+          guest_name?: string | null
           id?: string
+          is_guest?: boolean | null
           name?: string | null
+          parent_ticket_email?: string | null
           signature_svg?: string | null
           updated_at?: string | null
           vaccine_file_path?: string | null
@@ -38,8 +44,11 @@ export type Database = {
           created_at?: string | null
           email?: string
           eventbrite_id?: string | null
+          guest_name?: string | null
           id?: string
+          is_guest?: boolean | null
           name?: string | null
+          parent_ticket_email?: string | null
           signature_svg?: string | null
           updated_at?: string | null
           vaccine_file_path?: string | null
