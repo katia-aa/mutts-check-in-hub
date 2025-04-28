@@ -24,7 +24,21 @@ export async function configureStorage() {
     console.log("Storage configuration result:", data);
     
     // After the edge function has run, wait a moment to ensure the bucket is registered
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // Try to verify the bucket using the client directly
+    try {
+      const { data: bucketData, error: bucketError } = await supabase.storage
+        .getBucket('vaccine_records');
+        
+      if (bucketError) {
+        console.error("Error verifying bucket after configuration:", bucketError);
+      } else {
+        console.log("Bucket verification successful:", bucketData);
+      }
+    } catch (verifyError) {
+      console.error("Exception verifying bucket:", verifyError);
+    }
 
     return { success: true, data };
   } catch (e) {

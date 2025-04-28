@@ -83,22 +83,52 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Set up RLS policies using database functions
-    console.log('Setting storage policies directly via SQL');
+    // Try to set RLS policies directly via SQL
     try {
-      // Call the admin_setup_storage_policies function
-      const { error: policyError } = await supabaseAdmin.rpc(
-        'admin_setup_storage_policies',
-        { bucket_name_param: 'vaccine_records' }
-      );
+      console.log('Setting storage policies directly via SQL');
       
-      if (policyError) {
-        console.error('Error setting storage policies:', policyError);
+      // Create explicit policies for the vaccine_records bucket
+      const policyResult = await supabaseAdmin.rpc('admin_setup_storage_policies', {
+        bucket_name_param: 'vaccine_records'
+      }).catch(err => {
+        console.error('Error calling admin_setup_storage_policies:', err);
+        return { error: err };
+      });
+      
+      if (policyResult.error) {
+        console.error('Error setting storage policies:', policyResult.error);
       } else {
         console.log('Successfully set storage policies');
       }
-    } catch (policyErr) {
-      console.error('Exception setting storage policies:', policyErr);
+      
+      // Allow a few seconds for the policies to propagate
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } catch (err) {
+      console.error('Exception setting policies:', err);
+    }
+
+    // Try to insert a test file to validate the bucket is working
+    try {
+      const testContent = new TextEncoder().encode('Test file');
+      const { data: testFile, error: testFileError } = await supabaseAdmin.storage
+        .from('vaccine_records')
+        .upload('test-access.txt', testContent, {
+          contentType: 'text/plain',
+          upsert: true
+        });
+        
+      if (testFileError) {
+        console.error('Error with test upload:', testFileError);
+      } else {
+        console.log('Test file uploaded successfully:', testFile);
+        
+        // Clean up the test file
+        await supabaseAdmin.storage
+          .from('vaccine_records')
+          .remove(['test-access.txt']);
+      }
+    } catch (testErr) {
+      console.error('Error testing bucket access:', testErr);
     }
 
     // Return success

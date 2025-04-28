@@ -30,63 +30,95 @@ const StorageConfig = () => {
     try {
       console.log('Verifying bucket existence...');
       
-      // First, try to get bucket details
+      // First, try a more direct approach to check if the bucket exists through the REST API
+      try {
+        const res = await fetch(`${supabase.storageUrl}/bucket/vaccine_records`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${supabase.supabaseKey}`,
+            'apikey': supabase.supabaseKey
+          }
+        });
+        
+        if (res.ok) {
+          const bucketData = await res.json();
+          console.log('Bucket found via REST API:', bucketData);
+          setBucketDetails(bucketData);
+          
+          // Now test if we can upload a file to validate permissions
+          await testUpload();
+          return true;
+        } else {
+          console.log('Bucket not found via REST API:', await res.text());
+        }
+      } catch (restError) {
+        console.error('Error checking bucket via REST:', restError);
+      }
+      
+      // Fallback to standard Supabase client
       const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('vaccine_records');
       
       if (bucketError) {
-        console.log('Error checking bucket:', bucketError);
+        console.log('Error checking bucket with standard client:', bucketError);
+        
+        // If we get here and still have an error, the bucket likely doesn't exist
         setBucketDetails(null);
         setDetailedError(`Storage not configured: ${bucketError.message}`);
         setUploadStatus('error');
         return false;
       }
       
-      console.log('Bucket details:', bucketData);
+      console.log('Bucket details retrieved:', bucketData);
       setBucketDetails(bucketData);
       
       // Now test if we can upload a file
-      try {
-        // Create a small test blob
-        const testBlob = new Blob(['test'], { type: 'text/plain' });
-        const fileName = `test-${Date.now()}.txt`;
-        
-        // Try to upload a test file with the correct content type
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('vaccine_records')
-          .upload(fileName, testBlob, { 
-            contentType: 'text/plain',
-            upsert: true 
-          });
-          
-        if (uploadError) {
-          console.error("Error uploading test file:", uploadError);
-          setDetailedError(`Bucket exists but upload failed: ${uploadError.message}`);
-          setUploadStatus('error');
-          return false;
-        } else {
-          console.log("Test upload successful:", uploadData);
-          
-          // Clean up test file
-          await supabase.storage
-            .from('vaccine_records')
-            .remove([fileName]);
-          
-          setUploadStatus('success');
-          return true;
-        }
-      } catch (uploadTestError) {
-        console.error("Upload test failed:", uploadTestError);
-        setDetailedError(`Bucket exists but upload test failed: ${uploadTestError.message}`);
-        setUploadStatus('error');
-        return false;
-      }
+      await testUpload();
+      return true;
     } catch (error: any) {
-      console.error('Exception checking bucket:', error);
+      console.error('Exception verifying storage:', error);
       setDetailedError(`Exception verifying storage: ${error.message}`);
       setUploadStatus('error');
       return false;
     } finally {
       setIsVerifying(false);
+    }
+  };
+  
+  const testUpload = async () => {
+    try {
+      // Create a small test blob
+      const testBlob = new Blob(['test'], { type: 'text/plain' });
+      const fileName = `test-${Date.now()}.txt`;
+      
+      // Try to upload a test file with the correct content type
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('vaccine_records')
+        .upload(fileName, testBlob, { 
+          contentType: 'text/plain',
+          upsert: true 
+        });
+        
+      if (uploadError) {
+        console.error("Error uploading test file:", uploadError);
+        setDetailedError(`Bucket exists but upload failed: ${uploadError.message}`);
+        setUploadStatus('error');
+        return false;
+      } else {
+        console.log("Test upload successful:", uploadData);
+        
+        // Clean up test file
+        await supabase.storage
+          .from('vaccine_records')
+          .remove([fileName]);
+        
+        setUploadStatus('success');
+        return true;
+      }
+    } catch (uploadTestError: any) {
+      console.error("Upload test failed:", uploadTestError);
+      setDetailedError(`Bucket exists but upload test failed: ${uploadTestError.message}`);
+      setUploadStatus('error');
+      return false;
     }
   };
 
@@ -103,7 +135,7 @@ const StorageConfig = () => {
         console.log("Storage configuration succeeded:", result);
         
         // Wait and then check if the bucket exists after configuration
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Longer wait to ensure propagation
         const bucketVerified = await verifyBucket();
         
         toast({
