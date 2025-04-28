@@ -13,13 +13,14 @@ const Index = () => {
       <div className="space-y-6">
         <CheckInForm isGuest={false} />
         
-        <p className="text-sm text-center text-gray-500 pt-2">
-          Bringing a friend? They'll need to{" "}
-          <Link to="/guest-check-in" className="text-mutts-primary hover:underline">
-            check in separately
-          </Link>
-          .
-        </p>
+        <div className="text-center p-3 bg-mutts-primary/10 rounded-lg border border-mutts-primary/20 shadow-sm">
+          <p className="text-mutts-primary font-medium">
+            Bringing a friend? They'll need to{" "}
+            <Link to="/guest-check-in" className="text-mutts-primary font-bold hover:underline">
+              check in separately
+            </Link>.
+          </p>
+        </div>
       </div>
     </CheckInLayout>
   );
