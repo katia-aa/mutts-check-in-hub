@@ -15,6 +15,7 @@ export type Database = {
           email: string
           eventbrite_id: string | null
           guest_name: string | null
+          has_no_dog: boolean | null
           id: string
           is_guest: boolean | null
           name: string | null
@@ -30,6 +31,7 @@ export type Database = {
           email: string
           eventbrite_id?: string | null
           guest_name?: string | null
+          has_no_dog?: boolean | null
           id?: string
           is_guest?: boolean | null
           name?: string | null
@@ -45,6 +47,7 @@ export type Database = {
           email?: string
           eventbrite_id?: string | null
           guest_name?: string | null
+          has_no_dog?: boolean | null
           id?: string
           is_guest?: boolean | null
           name?: string | null

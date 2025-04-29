@@ -12,7 +12,8 @@ import { ArrowLeft, Dog } from "lucide-react";
 
 const GuestCheckIn = () => {
   const [guestName, setGuestName] = useState('');
-  const [selectedHostEmail, setSelectedHostEmail] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [hostEmail, setHostEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [noDog, setNoDog] = useState(false);
   const navigate = useNavigate();
@@ -23,22 +24,23 @@ const GuestCheckIn = () => {
     setIsLoading(true);
     
     try {
-      if (!selectedHostEmail || !guestName) {
+      if (!hostEmail || !guestName) {
         toast.error({
           title: "Required Information Missing",
-          description: "Please enter your name and select a ticket holder.",
+          description: "Please enter your name and the email of who invited you.",
         });
         return;
       }
 
-      // Generate the guest email using the same pattern as before
-      const guestEmail = `${guestName.toLowerCase().replace(/\s+/g, '_')}_guest_of_${selectedHostEmail}`;
+      // Use the provided guest email if available, otherwise generate one
+      const finalGuestEmail = guestEmail || 
+        `${guestName.toLowerCase().replace(/\s+/g, '_')}_guest_of_${hostEmail}`;
 
       // First check if this guest already exists
       const { data: existingGuest, error: checkError } = await supabase
         .from('attendees')
         .select('*')
-        .eq('email', guestEmail)
+        .eq('email', finalGuestEmail)
         .single();
 
       if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
@@ -56,7 +58,7 @@ const GuestCheckIn = () => {
             vaccine_upload_status: !noDog, // If they have no dog, they don't need to upload vaccine info
             name: guestName // Ensure name is up to date
           })
-          .eq('email', guestEmail)
+          .eq('email', finalGuestEmail)
           .select()
           .single();
           
@@ -68,10 +70,10 @@ const GuestCheckIn = () => {
         const { data: newGuestData, error: guestError } = await supabase
           .from('attendees')
           .insert({
-            email: guestEmail,
+            email: finalGuestEmail,
             name: guestName,
             is_guest: true,
-            parent_ticket_email: selectedHostEmail,
+            parent_ticket_email: hostEmail,
             guest_name: guestName,
             vaccine_upload_status: !noDog // If they have no dog, they don't need to upload vaccine info
           })
@@ -122,13 +124,22 @@ const GuestCheckIn = () => {
             disabled={isLoading}
           />
           
+          <Input
+            type="email"
+            placeholder="Enter your email (optional)"
+            value={guestEmail}
+            onChange={(e) => setGuestEmail(e.target.value)}
+            className="h-12 px-4 bg-white/90 border-mutts-primary/30 focus-visible:border-mutts-primary focus-visible:ring-mutts-primary rounded-xl"
+            disabled={isLoading}
+          />
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Who invited you to this pawsome event?
             </label>
             <GuestSelect
-              selectedHostEmail={selectedHostEmail}
-              onSelect={setSelectedHostEmail}
+              hostEmail={hostEmail}
+              onUpdate={setHostEmail}
               disabled={isLoading}
             />
           </div>
