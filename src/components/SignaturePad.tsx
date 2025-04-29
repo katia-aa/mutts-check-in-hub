@@ -11,6 +11,7 @@ const SignaturePad = () => {
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email");
   const isGuest = searchParams.get("isGuest") === "true";
+  const noDog = searchParams.get("noDog") === "true";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePadLib | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -84,11 +85,11 @@ const SignaturePad = () => {
         description: "Your signature has been saved. Moving to the next step!",
       });
 
-      // For guests, redirect to completion page
-      if (isGuest) {
-        navigate(`/check-in-complete?isGuest=true`);
+      // For guests or users with no dog, redirect to completion page
+      if (isGuest || noDog) {
+        navigate(`/check-in-complete?isGuest=${isGuest}&noDog=${noDog}`);
       } else {
-        // For regular users, continue to vaccine upload
+        // For regular users with dogs, continue to vaccine upload
         navigate(`/upload-vaccine?email=${email}`);
       }
     } catch (error) {

@@ -4,13 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle } from "lucide-react";
 
 interface CheckInProgressProps {
-  step: 1 | 2 | 3; // 1: Email, 2: Waiver, 3: Vaccine upload (or completion for guests)
-  totalSteps?: 2 | 3; // Default is 3, for guests it's 2
+  step: 1 | 2 | 3; // 1: Email, 2: Waiver, 3: Vaccine upload (or completion for short flow)
+  totalSteps?: 2 | 3; // Default is 3, for guests or no dog users it's 2
 }
 
 const CheckInProgress = ({ step, totalSteps = 3 }: CheckInProgressProps) => {
   const progress = totalSteps === 2 
-    ? (step === 1 ? 50 : 100) // 2-step flow (guests)
+    ? (step === 1 ? 50 : 100) // 2-step flow (guests or no dog)
     : (step === 1 ? 33 : step === 2 ? 66 : 100); // 3-step flow (regular)
   
   const getMessage = () => {

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -46,14 +45,13 @@ const CheckInForm = ({ isGuest }: CheckInFormProps) => {
         return;
       }
       
-      // Update the attendee to mark if they have a dog or not using noDog field
+      // Update the attendee to mark if they have a dog or not
       await supabase
         .from('attendees')
         .update({ 
           updated_at: new Date().toISOString(),
-          // We can use the vaccine_upload_status to indicate if they need to upload vaccine info
-          // If they don't have a dog, they don't need to upload vaccine records
-          vaccine_upload_status: !noDog 
+          // We're not using this flag anymore as we'll control the flow directly
+          vaccine_upload_status: false
         })
         .eq('email', email.toLowerCase());
 
@@ -62,12 +60,8 @@ const CheckInForm = ({ isGuest }: CheckInFormProps) => {
         description: "We found your registration. Let's continue!",
       });
       
-      // If attendee has no dog, skip the vaccine upload step
-      if (noDog) {
-        navigate(`/sign-waiver?email=${encodeURIComponent(email)}&noDog=true`);
-      } else {
-        navigate(`/sign-waiver?email=${encodeURIComponent(email)}`);
-      }
+      // Pass the noDog parameter to the waiver screen
+      navigate(`/sign-waiver?email=${encodeURIComponent(email)}&noDog=${noDog}`);
     } catch (error) {
       console.error('Error:', error);
       toast.error({
