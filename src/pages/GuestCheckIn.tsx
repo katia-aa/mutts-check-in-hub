@@ -1,19 +1,17 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import CheckInLayout from "@/components/CheckInLayout";
-import GuestSelect from "@/components/GuestSelect";
 import { useCustomToast } from "@/hooks/use-custom-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Dog } from "lucide-react";
 
 const GuestCheckIn = () => {
-  const [guestName, setGuestName] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
-  const [hostEmail, setHostEmail] = useState('');
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [hostEmail, setHostEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [noDog, setNoDog] = useState(false);
   const navigate = useNavigate();
@@ -22,60 +20,63 @@ const GuestCheckIn = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       if (!hostEmail || !guestName) {
         toast.error({
           title: "Required Information Missing",
-          description: "Please enter your name and the email of who invited you.",
+          description:
+            "Please enter your name and the email of who invited you.",
         });
         return;
       }
 
       // Use the provided guest email if available, otherwise generate one
-      const finalGuestEmail = guestEmail || 
-        `${guestName.toLowerCase().replace(/\s+/g, '_')}_guest_of_${hostEmail}`;
+      const finalGuestEmail =
+        guestEmail ||
+        `${guestName.toLowerCase().replace(/\s+/g, "_")}_guest_of_${hostEmail}`;
 
       // First check if this guest already exists
       const { data: existingGuest, error: checkError } = await supabase
-        .from('attendees')
-        .select('*')
-        .eq('email', finalGuestEmail)
+        .from("attendees")
+        .select("*")
+        .eq("email", finalGuestEmail)
         .single();
 
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+      if (checkError && checkError.code !== "PGRST116") {
+        // PGRST116 is "no rows returned"
         throw checkError;
       }
 
       let guestData;
-      
+
       // If guest exists, update that record
       if (existingGuest) {
         const { data: updatedGuest, error: updateError } = await supabase
-          .from('attendees')
-          .update({ 
+          .from("attendees")
+          .update({
             // Use vaccine_upload_status instead of has_no_dog
             vaccine_upload_status: !noDog, // If they have no dog, they don't need to upload vaccine info
-            name: guestName // Ensure name is up to date
+            name: guestName, // Ensure name is up to date
           })
-          .eq('email', finalGuestEmail)
+          .eq("email", finalGuestEmail)
           .select()
           .single();
-          
+
         if (updateError) throw updateError;
         guestData = updatedGuest;
-        console.log('Guest already exists, using updated record:', guestData);
+        console.log("Guest already exists, using updated record:", guestData);
       } else {
         // Create new guest record if they don't exist
         const { data: newGuestData, error: guestError } = await supabase
-          .from('attendees')
+          .from("attendees")
           .insert({
             email: finalGuestEmail,
             name: guestName,
             is_guest: true,
             parent_ticket_email: hostEmail,
             guest_name: guestName,
-            vaccine_upload_status: !noDog // If they have no dog, they don't need to upload vaccine info
+            vaccine_upload_status: !noDog, // If they have no dog, they don't need to upload vaccine info
           })
           .select()
           .single();
@@ -88,15 +89,17 @@ const GuestCheckIn = () => {
         title: "Welcome!",
         description: "Let's continue with your check-in.",
       });
-      
+
       // If guest has no dog, skip the vaccine upload step
       if (noDog) {
-        navigate(`/sign-waiver?email=${encodeURIComponent(guestData.email)}&noDog=true`);
+        navigate(
+          `/sign-waiver?email=${encodeURIComponent(guestData.email)}&noDog=true`
+        );
       } else {
         navigate(`/sign-waiver?email=${encodeURIComponent(guestData.email)}`);
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
       toast.error({
         title: "Error",
         description: "An error occurred. Please try again.",
@@ -107,7 +110,7 @@ const GuestCheckIn = () => {
   };
 
   return (
-    <CheckInLayout 
+    <CheckInLayout
       step={1}
       title="Guest Check-In"
       subtitle="Welcome! You can check in even if the person who invited you isn't here yet"
@@ -123,36 +126,40 @@ const GuestCheckIn = () => {
             required
             disabled={isLoading}
           />
-          
+
           <Input
             type="email"
-            placeholder="Enter your email (optional)"
+            placeholder="Enter your email"
             value={guestEmail}
             onChange={(e) => setGuestEmail(e.target.value)}
             className="h-12 px-4 bg-white/90 border-mutts-primary/30 focus-visible:border-mutts-primary focus-visible:ring-mutts-primary rounded-xl"
+            required
             disabled={isLoading}
           />
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Who invited you to this pawsome event?
             </label>
-            <GuestSelect
-              hostEmail={hostEmail}
-              onUpdate={setHostEmail}
+            <Input
+              type="hostEmail"
+              placeholder="Enter their name or email"
+              onChange={(e) => setHostEmail(e.target.value)}
+              className="h-12 px-4 bg-white/90 border-mutts-primary/30 focus-visible:border-mutts-primary focus-visible:ring-mutts-primary rounded-xl"
+              required
               disabled={isLoading}
             />
           </div>
-          
+
           <div className="flex items-center space-x-2 pt-2">
-            <Checkbox 
-              id="noDog" 
-              checked={noDog} 
+            <Checkbox
+              id="noDog"
+              checked={noDog}
               onCheckedChange={(checked) => setNoDog(checked === true)}
               className="border-mutts-primary data-[state=checked]:bg-mutts-primary"
             />
-            <label 
-              htmlFor="noDog" 
+            <label
+              htmlFor="noDog"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
             >
               I'm not bringing a dog to this event
@@ -160,16 +167,19 @@ const GuestCheckIn = () => {
           </div>
         </div>
 
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className="w-full h-12 text-lg font-medium bg-mutts-primary hover:bg-mutts-primary/90 rounded-xl transition-all"
           disabled={isLoading}
         >
           {isLoading ? "Processing..." : "Thank You So Mutts!"}
         </Button>
-        
+
         <div className="pt-2 text-center">
-          <Link to="/" className="inline-flex items-center text-mutts-primary hover:text-mutts-primary/80 text-sm">
+          <Link
+            to="/"
+            className="inline-flex items-center text-mutts-primary hover:text-mutts-primary/80 text-sm"
+          >
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to main check-in
           </Link>
         </div>
