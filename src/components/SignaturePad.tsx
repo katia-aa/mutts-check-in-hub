@@ -137,9 +137,19 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSubmit }) => {
       <div className="relative border rounded-md">
         <SignatureCanvas
           ref={sigCanvasRef}
-          canvasProps={{ width: 500, height: 200, className: 'w-full h-full' }}
+          canvasProps={{
+            width: 500,
+            height: 200,
+            className: 'w-full h-full',
+            style: {
+              backgroundColor: 'rgba(0,0,0,0)',
+            }
+          }}
+          dotSize={1}
+          minWidth={1}
+          maxWidth={2.5}
+          velocityFilterWeight={0.7}
           penColor="black"
-          backgroundColor="rgba(0,0,0,0)"
         />
         <div className="absolute top-2 right-2 space-x-2">
           <Button type="button" variant="outline" size="sm" onClick={clearSignature}>
