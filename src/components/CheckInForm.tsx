@@ -80,7 +80,7 @@ const CheckInForm = ({ isGuest }: CheckInFormProps) => {
         disabled={isLoading || isSubmitting}
       >
         <Mail className="w-5 h-5 mr-2" />
-        {isLoading ? "Checking..." : "Start Check-In"}
+        {isLoading ? "Checking..." : "Let's Get This Pawty Started"}
       </Button>
     </form>
   );

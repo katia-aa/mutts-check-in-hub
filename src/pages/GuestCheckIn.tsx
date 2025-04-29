@@ -1,12 +1,13 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CheckInLayout from "@/components/CheckInLayout";
 import GuestSelect from "@/components/GuestSelect";
 import { useCustomToast } from "@/hooks/use-custom-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ArrowLeft } from "lucide-react";
 
 const GuestCheckIn = () => {
   const [guestName, setGuestName] = useState('');
@@ -86,7 +87,7 @@ const GuestCheckIn = () => {
     <CheckInLayout 
       step={1}
       title="Guest Check-In"
-      subtitle="Select the person you're a guest of, then complete your check-in"
+      subtitle="We know it's pawfully tedious, but we need your info too!"
     >
       <form onSubmit={handleSubmit} className="w-full space-y-6">
         <div className="space-y-4">
@@ -100,11 +101,16 @@ const GuestCheckIn = () => {
             disabled={isLoading}
           />
           
-          <GuestSelect
-            selectedHostEmail={selectedHostEmail}
-            onSelect={setSelectedHostEmail}
-            disabled={isLoading}
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Who invited you to this pawsome event?
+            </label>
+            <GuestSelect
+              selectedHostEmail={selectedHostEmail}
+              onSelect={setSelectedHostEmail}
+              disabled={isLoading}
+            />
+          </div>
         </div>
 
         <Button 
@@ -112,8 +118,14 @@ const GuestCheckIn = () => {
           className="w-full h-12 text-lg font-medium bg-mutts-primary hover:bg-mutts-primary/90 rounded-xl transition-all"
           disabled={isLoading}
         >
-          {isLoading ? "Checking..." : "Start Check-In"}
+          {isLoading ? "Processing..." : "Thank You So Mutts!"}
         </Button>
+        
+        <div className="pt-2 text-center">
+          <Link to="/" className="inline-flex items-center text-mutts-primary hover:text-mutts-primary/80 text-sm">
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back to main check-in
+          </Link>
+        </div>
       </form>
     </CheckInLayout>
   );
