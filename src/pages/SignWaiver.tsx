@@ -189,6 +189,14 @@ const SignWaiver = () => {
           Agreement.
         </p>
       </div>
+      <div className="text-center mb-4">
+        <p className="text-lg font-medium">
+          Please sign below to join the fun{" "}
+          <span role="img" aria-label="hand pointing down">
+            👇
+          </span>
+        </p>
+      </div>
       <SignaturePad />
     </CheckInLayout>
   );

@@ -2,18 +2,16 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import CheckInLayout from "@/components/CheckInLayout";
 import { useCustomToast } from "@/hooks/use-custom-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Dog } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 const GuestCheckIn = () => {
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [hostEmail, setHostEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [noDog, setNoDog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useCustomToast();
 
@@ -55,8 +53,6 @@ const GuestCheckIn = () => {
         const { data: updatedGuest, error: updateError } = await supabase
           .from("attendees")
           .update({
-            // Use vaccine_upload_status instead of has_no_dog
-            vaccine_upload_status: !noDog, // If they have no dog, they don't need to upload vaccine info
             name: guestName, // Ensure name is up to date
           })
           .eq("email", finalGuestEmail)
@@ -76,7 +72,6 @@ const GuestCheckIn = () => {
             is_guest: true,
             parent_ticket_email: hostEmail,
             guest_name: guestName,
-            vaccine_upload_status: !noDog, // If they have no dog, they don't need to upload vaccine info
           })
           .select()
           .single();
@@ -90,14 +85,7 @@ const GuestCheckIn = () => {
         description: "Let's continue with your check-in.",
       });
 
-      // If guest has no dog, skip the vaccine upload step
-      if (noDog) {
-        navigate(
-          `/sign-waiver?email=${encodeURIComponent(guestData.email)}&noDog=true`
-        );
-      } else {
-        navigate(`/sign-waiver?email=${encodeURIComponent(guestData.email)}`);
-      }
+      navigate(`/sign-waiver?email=${encodeURIComponent(guestData.email)}`);
     } catch (error) {
       console.error("Error:", error);
       toast.error({
@@ -110,11 +98,7 @@ const GuestCheckIn = () => {
   };
 
   return (
-    <CheckInLayout
-      step={1}
-      title="Guest Check-In"
-      subtitle="Welcome! You can check in even if the person who invited you isn't here yet"
-    >
+    <CheckInLayout step={1} title="Welcome!">
       <form onSubmit={handleSubmit} className="w-full space-y-6">
         <div className="space-y-4">
           <Input
@@ -149,21 +133,6 @@ const GuestCheckIn = () => {
               required
               disabled={isLoading}
             />
-          </div>
-
-          <div className="flex items-center space-x-2 pt-2">
-            <Checkbox
-              id="noDog"
-              checked={noDog}
-              onCheckedChange={(checked) => setNoDog(checked === true)}
-              className="border-mutts-primary data-[state=checked]:bg-mutts-primary"
-            />
-            <label
-              htmlFor="noDog"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-            >
-              I'm not bringing a dog to this event
-            </label>
           </div>
         </div>
 
