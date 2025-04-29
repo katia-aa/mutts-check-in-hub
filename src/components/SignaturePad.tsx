@@ -145,10 +145,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSubmit }) => {
               backgroundColor: 'rgba(0,0,0,0)',
             }
           }}
-          dotSize={1}
-          minWidth={1}
-          maxWidth={2.5}
-          velocityFilterWeight={0.7}
+          backgroundColor="rgba(0,0,0,0)"
           penColor="black"
         />
         <div className="absolute top-2 right-2 space-x-2">
