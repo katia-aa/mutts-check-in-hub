@@ -68,12 +68,14 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSubmit }) => {
     try {
       // Upload the signature to Supabase storage
       const imageName = `signatures/${email.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.png`;
-      const block = signature.split(";base64,").pop();
-      const buff = Buffer.from(block as string, 'base64');
+      
+      // Convert base64 to blob instead of using Buffer
+      const base64Response = await fetch(signature);
+      const signatureBlob = await base64Response.blob();
 
       const { data, error: uploadError } = await supabase.storage
         .from('signatures')
-        .upload(imageName, buff, {
+        .upload(imageName, signatureBlob, {
           contentType: 'image/png',
           upsert: true
         });
@@ -143,7 +145,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSubmit }) => {
             className: 'w-full h-full',
             style: {
               backgroundColor: 'rgba(0,0,0,0)',
-              // Add pen color here as a style if needed
+              // Add pen color here as a style
               color: 'black'
             }
           }}
