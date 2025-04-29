@@ -52,7 +52,8 @@ const GuestCheckIn = () => {
         const { data: updatedGuest, error: updateError } = await supabase
           .from('attendees')
           .update({ 
-            has_no_dog: noDog,
+            // Use vaccine_upload_status instead of has_no_dog
+            vaccine_upload_status: !noDog, // If they have no dog, they don't need to upload vaccine info
             name: guestName // Ensure name is up to date
           })
           .eq('email', guestEmail)
@@ -72,7 +73,7 @@ const GuestCheckIn = () => {
             is_guest: true,
             parent_ticket_email: selectedHostEmail,
             guest_name: guestName,
-            has_no_dog: noDog
+            vaccine_upload_status: !noDog // If they have no dog, they don't need to upload vaccine info
           })
           .select()
           .single();

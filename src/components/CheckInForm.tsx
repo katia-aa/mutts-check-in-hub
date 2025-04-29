@@ -47,13 +47,12 @@ const CheckInForm = ({ isGuest }: CheckInFormProps) => {
       }
       
       // Update the attendee to mark if they have a dog or not using noDog field
-      // We don't have has_no_dog in the schema, so let's use a different approach
       await supabase
         .from('attendees')
         .update({ 
-          // Store this information in an existing field or one that matches the schema
           updated_at: new Date().toISOString(),
           // We can use the vaccine_upload_status to indicate if they need to upload vaccine info
+          // If they don't have a dog, they don't need to upload vaccine records
           vaccine_upload_status: !noDog 
         })
         .eq('email', email.toLowerCase());
