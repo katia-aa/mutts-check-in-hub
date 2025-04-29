@@ -15,10 +15,10 @@ const Index = () => {
         
         <div className="text-center p-4 bg-mutts-primary/10 rounded-lg border border-mutts-primary/20 shadow-sm">
           <p className="text-mutts-primary font-medium mb-1">
-            Bringing a furry friend's human along? 
+            Are you a guest of someone else?
           </p>
           <p className="text-gray-600">
-            We know paperwork is ruff, but your guest needs to check in too! They can do so by clicking below:
+            No need to wait for them! You can check in on your own by clicking below:
           </p>
           <Link 
             to="/guest-check-in" 

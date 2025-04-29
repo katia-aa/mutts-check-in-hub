@@ -3,16 +3,18 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import CheckInLayout from "@/components/CheckInLayout";
 import GuestSelect from "@/components/GuestSelect";
 import { useCustomToast } from "@/hooks/use-custom-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Dog } from "lucide-react";
 
 const GuestCheckIn = () => {
   const [guestName, setGuestName] = useState('');
   const [selectedHostEmail, setSelectedHostEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [noDog, setNoDog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useCustomToast();
 
@@ -45,10 +47,21 @@ const GuestCheckIn = () => {
 
       let guestData;
       
-      // If guest exists, use that record
+      // If guest exists, update that record
       if (existingGuest) {
-        guestData = existingGuest;
-        console.log('Guest already exists, using existing record:', guestData);
+        const { data: updatedGuest, error: updateError } = await supabase
+          .from('attendees')
+          .update({ 
+            has_no_dog: noDog,
+            name: guestName // Ensure name is up to date
+          })
+          .eq('email', guestEmail)
+          .select()
+          .single();
+          
+        if (updateError) throw updateError;
+        guestData = updatedGuest;
+        console.log('Guest already exists, using updated record:', guestData);
       } else {
         // Create new guest record if they don't exist
         const { data: newGuestData, error: guestError } = await supabase
@@ -58,7 +71,8 @@ const GuestCheckIn = () => {
             name: guestName,
             is_guest: true,
             parent_ticket_email: selectedHostEmail,
-            guest_name: guestName
+            guest_name: guestName,
+            has_no_dog: noDog
           })
           .select()
           .single();
@@ -71,7 +85,13 @@ const GuestCheckIn = () => {
         title: "Welcome!",
         description: "Let's continue with your check-in.",
       });
-      navigate(`/sign-waiver?email=${encodeURIComponent(guestData.email)}`);
+      
+      // If guest has no dog, skip the vaccine upload step
+      if (noDog) {
+        navigate(`/sign-waiver?email=${encodeURIComponent(guestData.email)}&noDog=true`);
+      } else {
+        navigate(`/sign-waiver?email=${encodeURIComponent(guestData.email)}`);
+      }
     } catch (error) {
       console.error('Error:', error);
       toast.error({
@@ -87,7 +107,7 @@ const GuestCheckIn = () => {
     <CheckInLayout 
       step={1}
       title="Guest Check-In"
-      subtitle="We know it's pawfully tedious, but we need your info too!"
+      subtitle="Welcome! You can check in even if the person who invited you isn't here yet"
     >
       <form onSubmit={handleSubmit} className="w-full space-y-6">
         <div className="space-y-4">
@@ -110,6 +130,21 @@ const GuestCheckIn = () => {
               onSelect={setSelectedHostEmail}
               disabled={isLoading}
             />
+          </div>
+          
+          <div className="flex items-center space-x-2 pt-2">
+            <Checkbox 
+              id="noDog" 
+              checked={noDog} 
+              onCheckedChange={(checked) => setNoDog(checked === true)}
+              className="border-mutts-primary data-[state=checked]:bg-mutts-primary"
+            />
+            <label 
+              htmlFor="noDog" 
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            >
+              I'm not bringing a dog to this event
+            </label>
           </div>
         </div>
 
