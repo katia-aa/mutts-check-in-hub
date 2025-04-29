@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { Button } from "@/components/ui/button";
@@ -10,9 +11,15 @@ interface SignaturePadProps {
   onSignatureSubmit?: () => void;
 }
 
+type SignatureCanvasRef = {
+  clear: () => void;
+  getTrimmedCanvas: () => HTMLCanvasElement;
+  fromDataURL: (dataUrl: string) => void;
+};
+
 const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSubmit }) => {
   const [signature, setSignature] = useState<string | null>(null);
-  const sigCanvasRef = useRef<SignatureCanvas | null>(null);
+  const sigCanvasRef = useRef<SignatureCanvasRef | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useCustomToast();
@@ -65,7 +72,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSubmit }) => {
     try {
       // Upload the signature to Supabase storage
       const imageName = `signatures/${email.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.png`;
-      const block = signatureDataUrl.split(";base64,").pop();
+      const block = signature.split(";base64,").pop();
       const buff = Buffer.from(block as string, 'base64');
 
       const { data, error: uploadError } = await supabase.storage
@@ -90,7 +97,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSubmit }) => {
       const { error: updateError } = await supabase
         .from('attendees')
         .update({
-          signature_url: publicURL.data.publicUrl,
+          signature_svg: publicURL.data.publicUrl,
           signed_waiver_at: new Date().toISOString()
         })
         .eq('email', email);
@@ -133,10 +140,9 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSubmit }) => {
     <div className="space-y-4">
       <div className="relative border rounded-md">
         <SignatureCanvas
-          ref={sigCanvasRef}
-          penColor='black'
-          backgroundColor='rgba(0,0,0,0)'
+          ref={sigCanvasRef as React.RefObject<SignatureCanvas>}
           canvasProps={{ width: 500, height: 200, className: 'w-full h-full' }}
+          options={{ penColor: 'black', backgroundColor: 'rgba(0,0,0,0)' }}
         />
         <div className="absolute top-2 right-2 space-x-2">
           <Button type="button" variant="outline" size="sm" onClick={clearSignature}>

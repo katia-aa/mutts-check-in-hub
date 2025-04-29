@@ -1,18 +1,11 @@
 
-import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import CheckInLayout from "@/components/CheckInLayout";
-import { useCustomToast } from "@/hooks/use-custom-toast";
-import { supabase } from "@/integrations/supabase/client";
-import SignaturePad from "@/components/SignaturePad";
 import { Card } from "@/components/ui/card";
+import CheckInLayout from "@/components/CheckInLayout";
+import SignaturePad from "@/components/SignaturePad";
 
 const SignWaiver = () => {
-  const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useCustomToast();
-
   const email = new URLSearchParams(location.search).get('email');
   const noDog = new URLSearchParams(location.search).get('noDog') === 'true';
 
