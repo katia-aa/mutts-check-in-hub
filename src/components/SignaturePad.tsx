@@ -145,7 +145,6 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSubmit }) => {
               backgroundColor: 'rgba(0,0,0,0)',
             }
           }}
-          backgroundColor="rgba(0,0,0,0)"
           penColor="black"
         />
         <div className="absolute top-2 right-2 space-x-2">
