@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -55,7 +54,6 @@ const GuestCheckIn = () => {
           .from("attendees")
           .update({
             name: guestName, // Ensure name is up to date
-            vaccine_upload_status: true, // Mark as not needing vaccine upload
           })
           .eq("email", finalGuestEmail)
           .select()
@@ -74,7 +72,6 @@ const GuestCheckIn = () => {
             is_guest: true,
             parent_ticket_email: hostEmail,
             guest_name: guestName,
-            vaccine_upload_status: true, // Mark as not needing vaccine upload
           })
           .select()
           .single();
