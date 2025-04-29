@@ -1,12 +1,18 @@
+
 import CheckInLayout from "@/components/CheckInLayout";
 import SignaturePad from "@/components/SignaturePad";
+import { useSearchParams } from "react-router-dom";
 
 const SignWaiver = () => {
+  const [searchParams] = useSearchParams();
+  const isGuest = searchParams.get("isGuest") === "true";
+  
   return (
     <CheckInLayout
       step={2}
       title="Let's Sign"
       subtitle="Just a quick paw-thentication"
+      totalSteps={isGuest ? 2 : 3} // 2 steps for guests, 3 for regular attendees
     >
       <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm overflow-y-auto max-h-[60vh] text-sm">
         <h1 className="text-xl font-bold mb-4">

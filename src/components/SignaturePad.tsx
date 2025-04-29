@@ -1,3 +1,4 @@
+
 import { useRef, useEffect, useState } from "react";
 import SignaturePadLib from "signature_pad";
 import { Button } from "@/components/ui/button";
@@ -5,13 +6,16 @@ import { ArrowRight, RefreshCw } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import Confetti from "@/components/Confetti";
 
 const SignaturePad = () => {
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email");
+  const isGuest = searchParams.get("isGuest") === "true";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePadLib | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -76,12 +80,27 @@ const SignaturePad = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Great job!",
-        description: "Your signature has been saved. Moving to the next step!",
-      });
-
-      navigate(`/upload-vaccine?email=${email}`);
+      // For guests, show confetti and complete check-in
+      if (isGuest) {
+        setShowConfetti(true);
+        toast({
+          title: "Check-in complete!",
+          description: "Thank you for signing the waiver. You're all checked in!",
+          duration: 4000,
+        });
+        
+        // Redirect after a short delay to allow confetti to display
+        setTimeout(() => {
+          navigate("/");
+        }, 4000);
+      } else {
+        // For regular users, continue to vaccine upload
+        toast({
+          title: "Great job!",
+          description: "Your signature has been saved. Moving to the next step!",
+        });
+        navigate(`/upload-vaccine?email=${email}`);
+      }
     } catch (error) {
       console.error("Error saving signature:", error);
       toast({
@@ -97,6 +116,7 @@ const SignaturePad = () => {
 
   return (
     <div className="space-y-6">
+      {showConfetti && <Confetti />}
       <div className="border border-mutts-primary/30 rounded-xl overflow-hidden bg-white/90 shadow-sm">
         <canvas
           ref={canvasRef}
@@ -119,7 +139,7 @@ const SignaturePad = () => {
           className="w-3/5 bg-mutts-primary hover:bg-mutts-primary/90 rounded-xl"
           disabled={isLoading}
         >
-          {isLoading ? "Saving..." : "Next Step"}
+          {isLoading ? "Saving..." : isGuest ? "Complete Check-in" : "Next Step"}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>

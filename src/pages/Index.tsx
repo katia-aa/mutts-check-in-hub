@@ -1,3 +1,4 @@
+
 import CheckInForm from "@/components/CheckInForm";
 import CheckInLayout from "@/components/CheckInLayout";
 import { Link } from "react-router-dom";
@@ -17,7 +18,7 @@ const Index = () => {
             Friend bought your ticket? No worries—skip the wait and check
             yourself in!
           </p>
-          <p className="text-gray-600">Check Me In! 👇</p>
+          <p className="text-gray-600 mb-2">Guests only need to sign the waiver to complete check-in. You won't need to upload your dog's vaccine record.</p>
           <Link
             to="/guest-check-in"
             className="inline-block mt-3 px-4 py-2 bg-mutts-secondary text-white rounded-lg hover:bg-mutts-secondary/90 transition-colors"

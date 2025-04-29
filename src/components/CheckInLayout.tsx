@@ -9,6 +9,7 @@ interface CheckInLayoutProps {
   title: string;
   subtitle?: string;
   showProgress?: boolean;
+  totalSteps?: 2 | 3; // Allow for either 2 or 3 total steps
 }
 
 const CheckInLayout = ({ 
@@ -16,7 +17,8 @@ const CheckInLayout = ({
   step = 1, 
   title, 
   subtitle,
-  showProgress = true 
+  showProgress = true,
+  totalSteps = 3 // Default to 3 steps for regular users
 }: CheckInLayoutProps) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center page-gradient px-4 py-12 font-['Inter']">
@@ -30,7 +32,7 @@ const CheckInLayout = ({
         </div>
         
         <Card className="w-full border-none card-shadow rounded-xl bg-white/90 backdrop-blur-sm">
-          {showProgress && <div className="px-6 pt-6"><CheckInProgress step={step} /></div>}
+          {showProgress && <div className="px-6 pt-6"><CheckInProgress step={step} totalSteps={totalSteps} /></div>}
           <div className="p-6 space-y-6">
             <div className="space-y-2 text-center">
               <h1 className="text-3xl font-bold text-mutts-primary animate-fade-in">{title}</h1>

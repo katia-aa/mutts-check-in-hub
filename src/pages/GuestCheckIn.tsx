@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,8 @@ const GuestCheckIn = () => {
           .from("attendees")
           .update({
             name: guestName, // Ensure name is up to date
+            is_guest: true, // Make sure is_guest is set to true
+            vaccine_upload_status: true, // Guests don't need to upload vaccine records
           })
           .eq("email", finalGuestEmail)
           .select()
@@ -72,6 +75,7 @@ const GuestCheckIn = () => {
             is_guest: true,
             parent_ticket_email: hostEmail,
             guest_name: guestName,
+            vaccine_upload_status: true, // Guests don't need to upload vaccine records
           })
           .select()
           .single();
@@ -85,7 +89,7 @@ const GuestCheckIn = () => {
         description: "Let's continue with your check-in.",
       });
 
-      navigate(`/sign-waiver?email=${encodeURIComponent(guestData.email)}`);
+      navigate(`/sign-waiver?email=${encodeURIComponent(guestData.email)}&isGuest=true`);
     } catch (error) {
       console.error("Error:", error);
       toast.error({
@@ -98,7 +102,12 @@ const GuestCheckIn = () => {
   };
 
   return (
-    <CheckInLayout step={1} title="Welcome!">
+    <CheckInLayout 
+      step={1} 
+      title="Welcome!"
+      subtitle="As a guest, you'll only need to sign a waiver to check in"
+      totalSteps={2} // Only 2 steps for guests
+    >
       <form onSubmit={handleSubmit} className="w-full space-y-6">
         <div className="space-y-4">
           <Input
@@ -117,7 +126,6 @@ const GuestCheckIn = () => {
             value={guestEmail}
             onChange={(e) => setGuestEmail(e.target.value)}
             className="h-12 px-4 bg-white/90 border-mutts-primary/30 focus-visible:border-mutts-primary focus-visible:ring-mutts-primary rounded-xl"
-            required
             disabled={isLoading}
           />
 
@@ -141,7 +149,7 @@ const GuestCheckIn = () => {
           className="w-full h-12 text-lg font-medium bg-mutts-primary hover:bg-mutts-primary/90 rounded-xl transition-all"
           disabled={isLoading}
         >
-          {isLoading ? "Processing..." : "Thank You So Mutts!"}
+          {isLoading ? "Processing..." : "Continue to Waiver"}
         </Button>
 
         <div className="pt-2 text-center">
