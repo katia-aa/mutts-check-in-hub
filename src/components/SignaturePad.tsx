@@ -1,169 +1,132 @@
-
-import React, { useState, useRef, useEffect } from 'react';
-import SignatureCanvas from 'react-signature-canvas';
+import { useRef, useEffect, useState } from "react";
+import SignaturePadLib from "signature_pad";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useCustomToast } from "@/hooks/use-custom-toast";
+import { ArrowRight, RefreshCw } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-interface SignaturePadProps {
-  onSignatureSubmit?: () => void;
-}
-
-type SignatureCanvasRef = SignatureCanvas;
-
-const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSubmit }) => {
-  const [signature, setSignature] = useState<string | null>(null);
-  const sigCanvasRef = useRef<SignatureCanvasRef | null>(null);
+const SignaturePad = () => {
+  const [searchParams] = useSearchParams();
+  const email = searchParams.get("email");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const signaturePadRef = useRef<SignaturePadLib | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const { toast } = useCustomToast();
-
-  const email = new URLSearchParams(location.search).get('email');
-  const noDog = new URLSearchParams(location.search).get('noDog') === 'true';
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (!email) {
-      toast.error({
-        title: "Missing Email",
-        description: "Email parameter is missing. Please go back and try again.",
+    if (canvasRef.current) {
+      signaturePadRef.current = new SignaturePadLib(canvasRef.current, {
+        backgroundColor: "rgb(255, 255, 255)",
+        penColor: "#8C81BD",
       });
-      // Redirect to the home page or an error page
-      navigate('/');
-    }
-  }, [email, navigate, toast]);
 
-  const clearSignature = () => {
-    if (sigCanvasRef.current) {
-      sigCanvasRef.current.clear();
-      setSignature(null);
+      const resizeCanvas = () => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const ratio = Math.max(window.devicePixelRatio || 1, 1);
+          canvas.width = canvas.offsetWidth * ratio;
+          canvas.height = canvas.offsetWidth * 0.5 * ratio;
+          canvas.getContext("2d")?.scale(ratio, ratio);
+          signaturePadRef.current?.clear();
+        }
+      };
+
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      return () => {
+        window.removeEventListener("resize", resizeCanvas);
+      };
     }
+  }, []);
+
+  const handleClear = () => {
+    signaturePadRef.current?.clear();
   };
 
-  const saveSignature = () => {
-    if (!sigCanvasRef.current) return;
-
-    const signatureDataUrl = sigCanvasRef.current.getTrimmedCanvas().toDataURL('image/png');
-    setSignature(signatureDataUrl);
-  };
-
-  const handleSubmit = async () => {
-    if (!signature) {
-      toast.error({
-        title: "No Signature",
-        description: "Please provide your signature before submitting.",
+  const handleNext = async () => {
+    if (signaturePadRef.current?.isEmpty()) {
+      toast({
+        variant: "destructive",
+        title: "Paw print needed!",
+        description: "Please sign the waiver before proceeding",
       });
       return;
     }
 
-    if (!email) {
-      toast.error({
-        title: "Missing Email",
-        description: "Email parameter is missing. Please go back and try again.",
-      });
-      return;
-    }
+    setIsLoading(true);
 
     try {
-      // Upload the signature to Supabase storage
-      const imageName = `signatures/${email.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.png`;
-      const block = signature.split(";base64,").pop();
-      const buff = Buffer.from(block as string, 'base64');
-
-      const { data, error: uploadError } = await supabase.storage
-        .from('signatures')
-        .upload(imageName, buff, {
-          contentType: 'image/png',
-          upsert: true
-        });
-
-      if (uploadError) {
-        console.error("Error uploading signature:", uploadError);
-        toast.error({
-          title: "Upload Error",
-          description: "Failed to upload signature. Please try again.",
-        });
-        return;
+      if (!email) {
+        throw new Error("Email is required");
       }
 
-      const publicURL = supabase.storage.from('signatures').getPublicUrl(imageName);
+      // Get signature as SVG
+      const signatureSvg = signaturePadRef.current?.toDataURL("image/svg+xml");
 
-      // Update the attendee record with the signature URL
-      const { error: updateError } = await supabase
-        .from('attendees')
+      const { error } = await supabase
+        .from("attendees")
         .update({
-          signature_svg: publicURL.data.publicUrl,
-          signed_waiver_at: new Date().toISOString()
+          signature_svg: signatureSvg,
+          updated_at: new Date().toISOString(),
         })
-        .eq('email', email);
+        .eq("email", email);
 
-      if (updateError) {
-        console.error("Error updating attendee record:", updateError);
-        toast.error({
-          title: "Database Error",
-          description: "Failed to save signature URL. Please try again.",
-        });
-        return;
-      }
+      if (error) throw error;
 
-      toast.success({
-        title: "Waiver Signed!",
-        description: "Thank you for signing the waiver!",
+      toast({
+        title: "Great job!",
+        description: "Your signature has been saved. Moving to the next step!",
       });
 
-      // If attendee has no dog, skip the vaccine upload step
-      if (noDog) {
-        navigate(`/`);
-      } else {
-        navigate(`/upload-vaccine?email=${encodeURIComponent(email as string)}`);
-      }
-
-      if (onSignatureSubmit) {
-        onSignatureSubmit();
-      }
-
+      navigate(`/upload-vaccine?email=${email}`);
     } catch (error) {
-      console.error("Error during submission:", error);
-      toast.error({
-        title: "Submission Error",
-        description: "An error occurred. Please try again.",
+      console.error("Error saving signature:", error);
+      toast({
+        variant: "destructive",
+        title: "Oops!",
+        description:
+          "There was an error saving your signature. Please try again.",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="relative border rounded-md">
-        <SignatureCanvas
-          ref={sigCanvasRef}
-          canvasProps={{
-            width: 500,
-            height: 200,
-            className: 'w-full h-full',
-            style: {
-              backgroundColor: 'rgba(0,0,0,0)',
-            }
-          }}
+    <div className="space-y-6">
+      <div className="border border-mutts-primary/30 rounded-xl overflow-hidden bg-white/90 shadow-sm">
+        <canvas
+          ref={canvasRef}
+          className="w-full touch-none"
+          style={{ height: "180px" }}
         />
-        <div className="absolute top-2 right-2 space-x-2">
-          <Button type="button" variant="outline" size="sm" onClick={clearSignature}>
-            Clear
-          </Button>
-          <Button type="button" size="sm" onClick={saveSignature}>
-            Save
-          </Button>
-        </div>
+      </div>
+      <div className="flex justify-between gap-4">
+        <Button
+          variant="outline"
+          onClick={handleClear}
+          className="w-2/5 border-mutts-primary/30 hover:border-mutts-primary/50 text-mutts-primary rounded-xl"
+          disabled={isLoading}
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Clear
+        </Button>
+        <Button
+          onClick={handleNext}
+          className="w-3/5 bg-mutts-primary hover:bg-mutts-primary/90 rounded-xl"
+          disabled={isLoading}
+        >
+          {isLoading ? "Saving..." : "Next Step"}
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
       </div>
 
-      <Button 
-        className="w-full h-12 text-lg font-medium bg-mutts-primary hover:bg-mutts-primary/90 rounded-xl transition-all"
-        onClick={handleSubmit}
-        disabled={!signature}
-      >
-        <Check className="w-5 h-5 mr-2" />
-        I Pawtographed!
-      </Button>
+      <p className="text-sm text-center text-gray-500">
+        By signing, you agree to our event rules and waiver terms.
+      </p>
     </div>
   );
 };
