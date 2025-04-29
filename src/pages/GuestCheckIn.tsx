@@ -105,7 +105,6 @@ const GuestCheckIn = () => {
     <CheckInLayout 
       step={1} 
       title="Welcome!"
-      subtitle="As a guest, you'll only need to sign a waiver to check in"
       totalSteps={2} // Only 2 steps for guests
     >
       <form onSubmit={handleSubmit} className="w-full space-y-6">
