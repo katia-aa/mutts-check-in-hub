@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 const SignaturePad = () => {
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email");
+  const noDog = searchParams.get("noDog") === "true";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePadLib | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -82,10 +83,23 @@ const SignaturePad = () => {
 
       toast.success({
         title: "Great job!",
-        description: "Your signature has been saved. Moving to the next step!"
+        description: "Your signature has been saved."
       });
 
-      navigate(`/upload-vaccine?email=${email}`);
+      // Skip vaccine upload step if attendee has no dog
+      if (noDog) {
+        toast.success({
+          title: "Check-in complete!",
+          description: "You're all set for the event!"
+        });
+        // Redirect to home page after a brief delay
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
+      } else {
+        // Continue to vaccine upload step only if they have a dog
+        navigate(`/upload-vaccine?email=${email}`);
+      }
     } catch (error) {
       console.error("Error saving signature:", error);
       toast.error({
