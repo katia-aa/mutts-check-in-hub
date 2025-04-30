@@ -14,11 +14,10 @@ const Index = () => {
         <CheckInForm isGuest={false} />
 
         <div className="text-center p-4 bg-mutts-primary/10 rounded-lg border border-mutts-primary/20 shadow-sm">
-          <p className="text-mutts-primary font-medium mb-1">
-            Friend bought your ticket? No worries—skip the wait and check
-            yourself in!
+          <p className="text-mutts-primary font-bold mb-1">
+            Friend bought your ticket?
           </p>
-          <p className="text-gray-600">Check Me In! 👇</p>
+          <p className="text-gray-600">Check Yourself In! 👇</p>
           <Link
             to="/guest-check-in"
             className="inline-block mt-3 px-4 py-2 bg-mutts-secondary text-white rounded-lg hover:bg-mutts-secondary/90 transition-colors"

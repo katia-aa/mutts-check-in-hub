@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ const CheckInComplete = () => {
   const isGuest = searchParams.get("isGuest") === "true";
   const noDog = searchParams.get("noDog") === "true";
   const [showConfetti, setShowConfetti] = useState(true);
-  
+
   // Determine if we're using the 2-step or 3-step flow
   const isShortFlow = isGuest || noDog;
   const totalSteps = isShortFlow ? 2 : 3;
@@ -20,7 +19,7 @@ const CheckInComplete = () => {
   useEffect(() => {
     // Show confetti when component mounts
     setShowConfetti(true);
-    
+
     // Scroll to top for best confetti effect
     window.scrollTo(0, 0);
   }, []);
@@ -40,13 +39,14 @@ const CheckInComplete = () => {
             <div className="rounded-full bg-green-100 p-3 animate-scale-in">
               <Check className="h-12 w-12 text-green-600" />
             </div>
-            
+
             <h2 className="text-2xl font-bold text-mutts-primary">
               You're all set!
             </h2>
-            
+
             <p className="text-gray-600 max-w-md">
-              Thank you for completing your check-in. We can't wait to see you {!noDog && "and your furry friend"} at the event!
+              Thank you for completing your check-in. We can't wait to see you{" "}
+              {!noDog && "and your furry friend"} at the event!
             </p>
 
             <div className="bg-mutts-primary/10 rounded-lg p-4 w-full max-w-md">
@@ -63,7 +63,7 @@ const CheckInComplete = () => {
                 {!isShortFlow && (
                   <li className="flex items-center">
                     <Check className="h-4 w-4 mr-2 text-green-600" />
-                    Vaccine record uploaded
+                    Dog vaccine record uploaded
                   </li>
                 )}
               </ul>

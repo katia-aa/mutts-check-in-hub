@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -89,7 +88,9 @@ const GuestCheckIn = () => {
         description: "Let's continue with your check-in.",
       });
 
-      navigate(`/sign-waiver?email=${encodeURIComponent(guestData.email)}&isGuest=true`);
+      navigate(
+        `/sign-waiver?email=${encodeURIComponent(guestData.email)}&isGuest=true`
+      );
     } catch (error) {
       console.error("Error:", error);
       toast.error({
@@ -102,9 +103,10 @@ const GuestCheckIn = () => {
   };
 
   return (
-    <CheckInLayout 
-      step={1} 
-      title="Welcome!"
+    <CheckInLayout
+      step={1}
+      title="Welcome to the Mutts Den!"
+      subtitle="🏠🥂"
       totalSteps={2} // Only 2 steps for guests
     >
       <form onSubmit={handleSubmit} className="w-full space-y-6">
