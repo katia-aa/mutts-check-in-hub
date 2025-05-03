@@ -7,7 +7,7 @@ import CheckInLayout from "@/components/CheckInLayout";
 const Index = () => {
   return (
     <CheckInLayout
-      step={1}
+      step={0}
       title="Mutts Assemble: Your Check-in Awaits!"
       subtitle="Welcome to the pawty! Choose how you'd like to check in"
     >
