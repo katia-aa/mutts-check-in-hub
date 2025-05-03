@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { PawPrint, Ticket } from "lucide-react";
@@ -19,18 +18,15 @@ const Index = () => {
             <div className="bg-mutts-primary/10 p-3 rounded-full">
               <PawPrint className="h-6 w-6 text-mutts-primary" />
             </div>
-            <h3 className="text-xl font-bold text-mutts-primary">I bought my own ticket 🐾</h3>
+            <h3 className="text-xl font-bold text-mutts-primary">
+              I bought my own ticket 🐾
+            </h3>
           </div>
-          <p className="text-gray-600 mb-4">
-            Use the email address you used when purchasing your ticket through Eventbrite.
-          </p>
-          <Button 
+          <Button
             asChild
             className="w-full h-12 text-lg font-medium bg-mutts-primary hover:bg-mutts-primary/90 rounded-xl transition-all"
           >
-            <Link to="/ticket-holder">
-              I'm the Ticket Holder
-            </Link>
+            <Link to="/ticket-holder">I'm the Ticket Holder</Link>
           </Button>
         </div>
 
@@ -40,18 +36,15 @@ const Index = () => {
             <div className="bg-mutts-secondary/10 p-3 rounded-full">
               <Ticket className="h-6 w-6 text-mutts-secondary" />
             </div>
-            <h3 className="text-xl font-bold text-mutts-secondary">A friend bought my ticket 🎉</h3>
+            <h3 className="text-xl font-bold text-mutts-secondary">
+              A friend bought my ticket 🎉
+            </h3>
           </div>
-          <p className="text-gray-600 mb-4">
-            Your friend purchased your ticket? No problem! We just need your name and their email.
-          </p>
-          <Button 
+          <Button
             asChild
             className="w-full h-12 text-lg font-medium bg-mutts-secondary hover:bg-mutts-secondary/90 rounded-xl transition-all"
           >
-            <Link to="/guest-check-in">
-              Check in as Guest
-            </Link>
+            <Link to="/guest-check-in">Check in as Guest</Link>
           </Button>
         </div>
       </div>
