@@ -10,6 +10,7 @@ import SignWaiver from "./pages/SignWaiver";
 import UploadVaccine from "./pages/UploadVaccine";
 import GuestCheckIn from "./pages/GuestCheckIn";
 import CheckInComplete from "./pages/CheckInComplete";
+import TicketHolder from "./pages/TicketHolder";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
       <HashRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/ticket-holder" element={<TicketHolder />} />
           <Route path="/admin-dashboard" element={<Admin />} />
           <Route path="/sign-waiver" element={<SignWaiver />} />
           <Route path="/upload-vaccine" element={<UploadVaccine />} />
