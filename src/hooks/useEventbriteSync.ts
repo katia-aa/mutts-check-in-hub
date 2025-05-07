@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,35 +60,71 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
         return;
       }
 
+      // Process attendees and identify dogs
       for (const attendee of eventbriteAttendees) {
         if (!attendee.profile || !attendee.profile.email) {
           console.warn("Skipping attendee without email:", attendee);
           continue;
         }
 
-        const { error } = await supabase.from("attendees").upsert(
-          {
-            email: attendee.profile.email,
-            name: `${attendee.profile.first_name} ${attendee.profile.last_name}`,
-            eventbrite_id: attendee.id,
-            vaccine_upload_status: false,
-          },
-          {
-            onConflict: "email",
-          }
-        );
+        const isDog = attendee.ticket_class_name === "Mutts Access Pass (For Doggos)";
+        
+        if (isDog) {
+          // Process as dog - find owner and add as a dog
+          const ownerEmail = attendee.profile.email;
+          console.log(`Processing dog with owner email: ${ownerEmail}, name: ${attendee.profile.first_name}`);
+          
+          // Insert dog record
+          const { error: dogError } = await supabase.from("dogs").upsert(
+            {
+              name: attendee.profile.first_name,
+              owner_email: ownerEmail,
+              vaccine_upload_status: false,
+            },
+            {
+              onConflict: "owner_email,name",
+            }
+          );
 
-        if (error) {
-          console.error("Error syncing attendee:", error);
-          if (
-            error.code === "42501" ||
-            error.message?.includes("row-level security")
-          ) {
-            setRlsError(true);
-            setErrorMessage(
-              "Row Level Security policy violation: The database is preventing insertion of attendee data."
-            );
-            break;
+          if (dogError) {
+            console.error("Error syncing dog:", dogError);
+            if (
+              dogError.code === "42501" ||
+              dogError.message?.includes("row-level security")
+            ) {
+              setRlsError(true);
+              setErrorMessage(
+                "Row Level Security policy violation: The database is preventing insertion of dog data."
+              );
+              break;
+            }
+          }
+        } else {
+          // Process as human attendee
+          const { error } = await supabase.from("attendees").upsert(
+            {
+              email: attendee.profile.email,
+              name: `${attendee.profile.first_name} ${attendee.profile.last_name}`,
+              eventbrite_id: attendee.id,
+              vaccine_upload_status: false,
+            },
+            {
+              onConflict: "email",
+            }
+          );
+
+          if (error) {
+            console.error("Error syncing attendee:", error);
+            if (
+              error.code === "42501" ||
+              error.message?.includes("row-level security")
+            ) {
+              setRlsError(true);
+              setErrorMessage(
+                "Row Level Security policy violation: The database is preventing insertion of attendee data."
+              );
+              break;
+            }
           }
         }
       }
@@ -95,7 +132,7 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
       await onSyncComplete();
       toast({
         title: "Success",
-        description: "Attendees synced with Eventbrite",
+        description: "Attendees and dogs synced with Eventbrite",
       });
     } catch (error: any) {
       console.error("Error fetching Eventbrite attendees:", error);

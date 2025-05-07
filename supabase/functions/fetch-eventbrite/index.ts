@@ -39,7 +39,7 @@ serve(async (req) => {
     }
     
     console.log(`Using EVENT_ID: ${EVENT_ID}`);
-    const response = await fetch(`${BASE_URL}/events/${EVENT_ID}/attendees/`, {
+    const response = await fetch(`${BASE_URL}/events/${EVENT_ID}/attendees/?expand=ticket_class`, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
@@ -99,16 +99,32 @@ serve(async (req) => {
       );
     }
     
+    // Process attendees to add ticket_class_name for easier dog identification
+    const processedAttendees = data.attendees.map(attendee => {
+      const ticketClassName = attendee.ticket_class?.name || "Unknown";
+      return {
+        ...attendee,
+        ticket_class_name: ticketClassName
+      };
+    });
+    
     console.log(
-      `Successfully fetched ${data.attendees.length} attendees from Eventbrite`
+      `Successfully fetched ${processedAttendees.length} attendees from Eventbrite`
     );
     
-    return new Response(JSON.stringify(data), {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-      },
-    });
+    // Return the modified data
+    return new Response(
+      JSON.stringify({
+        ...data,
+        attendees: processedAttendees
+      }),
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error in fetch-eventbrite function:", error.message);
     return new Response(
