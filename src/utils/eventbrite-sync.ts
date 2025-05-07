@@ -40,15 +40,29 @@ export const processHumanAttendee = async (
 };
 
 // Generate a default name for dogs when no name is provided
-export const generateDefaultDogName = async (ownerEmail: string): Promise<string> => {
-  // Get existing dogs count for this owner to determine the next number
-  const { data: existingDogs } = await supabase
+export const generateDefaultDogName = async (ownerEmail: string, index: number): Promise<string> => {
+  return `Dog ${index + 1}`;
+};
+
+// Delete existing dogs for an owner to avoid duplicates on refresh
+export const deleteExistingDogsForOwner = async (
+  ownerEmail: string,
+  setRlsError: (value: boolean) => void,
+  setErrorMessage: (value: string | null) => void
+) => {
+  console.log(`Removing existing dogs for owner ${ownerEmail} before adding new ones`);
+  
+  const { error } = await supabase
     .from("dogs")
-    .select("id")
+    .delete()
     .eq("owner_email", ownerEmail);
     
-  const dogCount = existingDogs?.length || 0;
-  return `Dog ${dogCount + 1}`;
+  if (error) {
+    console.error(`Error removing existing dogs for ${ownerEmail}:`, error);
+    return handleDatabaseError(error, setRlsError, setErrorMessage);
+  }
+  
+  return false;
 };
 
 // Process dogs for an owner
@@ -60,18 +74,22 @@ export const processDogs = async (
 ) => {
   console.log(`Processing ${dogs.length} dogs for owner ${ownerEmail}`);
   
+  // Delete existing dogs for this owner to prevent duplicates on refresh
+  const shouldStop = await deleteExistingDogsForOwner(ownerEmail, setRlsError, setErrorMessage);
+  if (shouldStop) return true;
+  
+  // Add all dogs for this owner from the current sync
   for (let i = 0; i < dogs.length; i++) {
     let dogName = dogs[i];
     
     // If dog has no name or empty name, generate a default name
     if (!dogName || dogName.trim() === '') {
-      dogName = await generateDefaultDogName(ownerEmail);
+      dogName = await generateDefaultDogName(ownerEmail, i);
     }
     
     console.log(`Adding dog: ${dogName} for owner ${ownerEmail}`);
     
-    // Insert the dog record without checking for duplicates
-    // This allows multiple dogs per owner (even with same name)
+    // Insert the dog record
     const { error: dogError } = await supabase
       .from("dogs")
       .insert({
