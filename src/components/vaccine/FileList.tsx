@@ -1,5 +1,5 @@
 
-import { FileX } from "lucide-react";
+import { DeleteIcon } from "lucide-react";
 
 interface FileListProps {
   files: File[];
@@ -32,7 +32,7 @@ const FileList = ({ files, uploadingFileIndex, onRemoveFile }: FileListProps) =>
                 className="text-red-500 hover:text-red-700"
                 aria-label="Remove file"
               >
-                <FileX size={16} />
+                <DeleteIcon size={18} />
               </button>
             )}
           </div>

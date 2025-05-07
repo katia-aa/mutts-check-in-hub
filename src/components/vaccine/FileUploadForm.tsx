@@ -103,7 +103,7 @@ const FileUploadForm = ({
         {!isUploading && !isConfiguringStorage && !formSubmitted && !isLoadingDogs && <ArrowRight className="ml-2" />}
       </Button>
 
-      {dogCount > 0 && !hasRequiredFiles && !isLoadingDogs && (
+      {dogCount > 0 && selectedFiles.length > 0 && !hasRequiredFiles && !isLoadingDogs && (
         <p className="text-sm text-center text-red-500">
           Please upload vaccine records for all {dogCount} dog{dogCount > 1 ? "s" : ""}
         </p>
