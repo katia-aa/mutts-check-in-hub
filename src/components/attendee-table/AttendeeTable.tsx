@@ -1,3 +1,4 @@
+
 import {
   Table,
   TableBody,
@@ -19,10 +20,6 @@ interface AttendeeTableProps {
 const AttendeeTable = ({ data }: AttendeeTableProps) => {
   const { dogsMap } = useDogsFetcher(data);
 
-  const getDogCount = (email: string) => {
-    return dogsMap[email]?.length || 0;
-  };
-
   return (
     <div className="bg-white rounded-lg shadow">
       <Table>
@@ -33,7 +30,8 @@ const AttendeeTable = ({ data }: AttendeeTableProps) => {
             <TableHead>Event ID</TableHead>
             <TableHead>Dogs</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Details</TableHead>
+            <TableHead>Vaccine Files</TableHead>
+            <TableHead>Waiver Signature</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -41,7 +39,7 @@ const AttendeeTable = ({ data }: AttendeeTableProps) => {
             <AttendeeTableRow
               key={attendee.id}
               attendee={attendee}
-              dogCount={getDogCount(attendee.email)}
+              dogs={dogsMap[attendee.email] || []}
             />
           ))}
         </TableBody>

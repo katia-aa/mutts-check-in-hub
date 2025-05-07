@@ -1,6 +1,7 @@
+
 import LoadingState from "./LoadingState";
 import EmptyState from "./EmptyState";
-import AttendeeTable from "@/components/AttendeeTable";
+import AttendeeTable from "@/components/attendee-table/AttendeeTable";
 import { Attendee } from "@/types/attendee";
 
 interface AttendeeContentProps {

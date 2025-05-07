@@ -1,16 +1,19 @@
 
-import { Users } from "lucide-react";
+import { Users, FileText, AlertTriangle } from "lucide-react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Attendee } from "@/types/attendee";
+import { Dog } from "@/types/dog";
 import DogBadge from "./DogBadge";
 import StatusIndicator from "./StatusIndicator";
+import VaccineFileCell from "./VaccineFileCell";
+import WaiverSignatureCell from "./WaiverSignatureCell";
 
 interface AttendeeTableRowProps {
   attendee: Attendee;
-  dogCount: number;
+  dogs: Dog[];
 }
 
-const AttendeeTableRow = ({ attendee, dogCount }: AttendeeTableRowProps) => {
+const AttendeeTableRow = ({ attendee, dogs }: AttendeeTableRowProps) => {
   return (
     <TableRow className="hover:bg-gray-50">
       <TableCell>
@@ -43,10 +46,22 @@ const AttendeeTableRow = ({ attendee, dogCount }: AttendeeTableRowProps) => {
         </div>
       </TableCell>
       <TableCell>
-        <DogBadge count={dogCount} />
+        <DogBadge count={dogs.length} />
       </TableCell>
       <TableCell>
-        <StatusIndicator hasVaccineRecord={!!attendee.vaccine_file_path} />
+        <StatusIndicator 
+          hasVaccineRecord={!!attendee.vaccine_file_path} 
+          hasWaiverSignature={!!attendee.signature_svg}
+        />
+      </TableCell>
+      <TableCell>
+        <VaccineFileCell 
+          attendee={attendee} 
+          dogs={dogs}
+        />
+      </TableCell>
+      <TableCell>
+        <WaiverSignatureCell signature={attendee.signature_svg} />
       </TableCell>
     </TableRow>
   );
