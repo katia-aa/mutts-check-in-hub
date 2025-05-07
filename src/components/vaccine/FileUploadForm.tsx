@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { useState, useRef } from "react";
+import { ArrowRight, FileX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import UploadZone from "./UploadZone";
 import UploadProgress from "./UploadProgress";
@@ -18,6 +18,7 @@ interface FileUploadFormProps {
   uploadingFileIndex: number | null;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
+  onRemoveFile: (index: number) => void;
 }
 
 const FileUploadForm = ({
@@ -30,16 +31,28 @@ const FileUploadForm = ({
   overallProgress,
   uploadingFileIndex,
   onFileChange,
-  onSubmit
+  onSubmit,
+  onRemoveFile
 }: FileUploadFormProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onFileChange(e);
+    // Reset the file input after handling the change
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="space-y-4">
         <UploadZone
-          onFileChange={onFileChange}
+          onFileChange={handleFileChange}
           isDisabled={isUploading || isConfiguringStorage || formSubmitted}
           isConfiguringStorage={isConfiguringStorage}
           multiple={true}
+          fileInputRef={fileInputRef}
         />
         
         {(isUploading || formSubmitted) && (
@@ -53,10 +66,13 @@ const FileUploadForm = ({
           </>
         )}
         
-        <FileList 
-          files={selectedFiles} 
-          uploadingFileIndex={uploadingFileIndex}
-        />
+        {selectedFiles.length > 0 && (
+          <FileList 
+            files={selectedFiles} 
+            uploadingFileIndex={uploadingFileIndex}
+            onRemoveFile={onRemoveFile}
+          />
+        )}
         
         {preview && (
           <FilePreview file={file} previewUrl={preview} />

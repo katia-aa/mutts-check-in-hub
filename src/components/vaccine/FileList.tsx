@@ -1,15 +1,18 @@
 
+import { FileX } from "lucide-react";
+
 interface FileListProps {
   files: File[];
   uploadingFileIndex: number | null;
+  onRemoveFile?: (index: number) => void;
 }
 
-const FileList = ({ files, uploadingFileIndex }: FileListProps) => {
+const FileList = ({ files, uploadingFileIndex, onRemoveFile }: FileListProps) => {
   if (files.length === 0) return null;
   
   return (
     <div className="mt-4 space-y-2">
-      <h3 className="font-medium text-sm text-gray-700">Selected Files:</h3>
+      <h3 className="font-medium text-sm text-gray-700">Selected Files ({files.length}):</h3>
       {files.map((file, index) => (
         <div 
           key={`${file.name}-${index}`} 
@@ -18,9 +21,21 @@ const FileList = ({ files, uploadingFileIndex }: FileListProps) => {
           }`}
         >
           <span className="text-sm truncate max-w-[200px]">{file.name}</span>
-          <span className="text-xs text-gray-500">
-            {(file.size / 1024 / 1024).toFixed(2)} MB
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">
+              {(file.size / 1024 / 1024).toFixed(2)} MB
+            </span>
+            {onRemoveFile && uploadingFileIndex !== index && (
+              <button 
+                type="button" 
+                onClick={() => onRemoveFile(index)} 
+                className="text-red-500 hover:text-red-700"
+                aria-label="Remove file"
+              >
+                <FileX size={16} />
+              </button>
+            )}
+          </div>
         </div>
       ))}
     </div>

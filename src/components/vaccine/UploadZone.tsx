@@ -7,9 +7,16 @@ interface UploadZoneProps {
   isDisabled: boolean;
   isConfiguringStorage: boolean;
   multiple?: boolean;
+  fileInputRef?: React.RefObject<HTMLInputElement>;
 }
 
-const UploadZone = ({ onFileChange, isDisabled, isConfiguringStorage, multiple = false }: UploadZoneProps) => {
+const UploadZone = ({ 
+  onFileChange, 
+  isDisabled, 
+  isConfiguringStorage, 
+  multiple = false, 
+  fileInputRef 
+}: UploadZoneProps) => {
   return (
     <div className="flex flex-col items-center p-6 border-2 border-dashed border-mutts-primary/30 rounded-xl bg-white/70 hover:border-mutts-primary/50 transition-colors">
       <Upload className="h-8 w-8 mb-2 text-mutts-primary" />
@@ -20,6 +27,7 @@ const UploadZone = ({ onFileChange, isDisabled, isConfiguringStorage, multiple =
         className="max-w-xs border-mutts-primary/30 focus-visible:ring-mutts-primary"
         disabled={isDisabled}
         multiple={multiple}
+        ref={fileInputRef}
       />
       <p className="mt-2 text-sm text-gray-500">
         {multiple ? "Select multiple files - " : ""}Accepts JPG, PNG, or PDF (max 10MB each)

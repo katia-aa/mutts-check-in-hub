@@ -47,10 +47,10 @@ export const useMultiFileUpload = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files);
-
-      // Check file sizes
-      const validFiles = files.filter((file) => {
+      const newFiles = Array.from(e.target.files);
+      
+      // Check file sizes and validate
+      const validFiles = newFiles.filter((file) => {
         if (file.size > 10 * 1024 * 1024) {
           toast.error({
             title: "File too large",
@@ -60,9 +60,14 @@ export const useMultiFileUpload = ({
         }
         return true;
       });
-
-      setSelectedFiles(validFiles);
+      
+      // Add new files to existing selection
+      setSelectedFiles(prevFiles => [...prevFiles, ...validFiles]);
     }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,5 +137,6 @@ export const useMultiFileUpload = ({
     setSelectedFiles,
     handleFileChange,
     handleSubmit,
+    handleRemoveFile
   };
 };

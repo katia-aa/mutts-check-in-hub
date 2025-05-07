@@ -43,7 +43,8 @@ const UploadVaccine = () => {
     overallProgress,
     formSubmitted,
     handleFileChange,
-    handleSubmit
+    handleSubmit,
+    handleRemoveFile
   } = useMultiFileUpload({
     email,
     onUploadSuccess: handleUploadSuccess
@@ -66,6 +67,7 @@ const UploadVaccine = () => {
         uploadingFileIndex={uploadingFileIndex}
         onFileChange={handleFileChange}
         onSubmit={handleSubmit}
+        onRemoveFile={handleRemoveFile}
       />
     </CheckInLayout>
   );
