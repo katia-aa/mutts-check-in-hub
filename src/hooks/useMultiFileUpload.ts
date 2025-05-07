@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { attemptEdgeFunctionUpload } from "@/utils/uploadHelpers";
+import { UploadResult } from "@/types/vaccineUpload";
 
 interface MultiFileUploadProps {
   email: string | null;
@@ -74,7 +75,9 @@ export const useMultiFileUpload = ({
         const result = await attemptEdgeFunctionUpload(email, file);
         
         if (!result.success) {
-          throw new Error(`Error uploading ${file.name}: ${result.error}`);
+          // Fixed: Safely check for error property only on unsuccessful results
+          const errorMessage = result.error || "Unknown error occurred";
+          throw new Error(`Error uploading ${file.name}: ${errorMessage}`);
         }
         
         console.log(`Successfully uploaded ${file.name}`);
