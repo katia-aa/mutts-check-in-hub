@@ -1,6 +1,5 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { PawPrint, Ticket } from "lucide-react";
 import { Link } from "react-router-dom";
 import CheckInLayout from "@/components/CheckInLayout";
 
@@ -15,9 +14,6 @@ const Index = () => {
         {/* Ticket Holder Option */}
         <div className="p-6 bg-white rounded-xl border border-mutts-primary/20 shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center gap-4 mb-4">
-            <div className="bg-mutts-primary/10 p-3 rounded-full">
-              <PawPrint className="h-6 w-6 text-mutts-primary" />
-            </div>
             <h3 className="text-xl font-bold text-mutts-primary">
               I bought my own ticket 🐾
             </h3>
@@ -33,9 +29,6 @@ const Index = () => {
         {/* Guest Option */}
         <div className="p-6 bg-white rounded-xl border border-mutts-secondary/20 shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center gap-4 mb-4">
-            <div className="bg-mutts-secondary/10 p-3 rounded-full">
-              <Ticket className="h-6 w-6 text-mutts-secondary" />
-            </div>
             <h3 className="text-xl font-bold text-mutts-secondary">
               A friend bought my ticket 🎉
             </h3>
