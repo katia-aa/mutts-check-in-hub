@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import CheckInLayout from "@/components/CheckInLayout";
 import UploadZone from "./vaccine/UploadZone";
@@ -99,6 +99,16 @@ const UploadVaccine = () => {
           {isUploading ? "Uploading..." : (isConfiguringStorage ? "Preparing..." : formSubmitted ? "Processing..." : "Complete Check-In")}
           {!isUploading && !isConfiguringStorage && !formSubmitted && <ArrowRight className="ml-2" />}
         </Button>
+        
+        <div className="text-center mt-6">
+          <p className="text-sm text-gray-600 mb-2">Bringing multiple dogs?</p>
+          <Link 
+            to={`/dog-vaccine?email=${email}`}
+            className="text-mutts-primary hover:underline text-sm font-medium"
+          >
+            Click here to manage multiple dog vaccine records
+          </Link>
+        </div>
       </form>
     </CheckInLayout>
   );

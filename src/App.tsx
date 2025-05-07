@@ -11,6 +11,7 @@ import UploadVaccine from "./pages/UploadVaccine";
 import GuestCheckIn from "./pages/GuestCheckIn";
 import CheckInComplete from "./pages/CheckInComplete";
 import TicketHolder from "./pages/TicketHolder";
+import DogVaccineUpload from "./pages/DogVaccineUpload";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/admin-dashboard" element={<Admin />} />
           <Route path="/sign-waiver" element={<SignWaiver />} />
           <Route path="/upload-vaccine" element={<UploadVaccine />} />
+          <Route path="/dog-vaccine" element={<DogVaccineUpload />} />
           <Route path="/guest-check-in" element={<GuestCheckIn />} />
           <Route path="/check-in-complete" element={<CheckInComplete />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
