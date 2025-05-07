@@ -1,4 +1,3 @@
-
 import {
   Table,
   TableBody,
@@ -15,11 +14,10 @@ import { useDogsFetcher } from "./useDogsFetcher";
 
 interface AttendeeTableProps {
   data: Attendee[];
-  onDataUpdate: () => void;
 }
 
-const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
-  const { dogsMap, isLoadingDogs } = useDogsFetcher(data);
+const AttendeeTable = ({ data }: AttendeeTableProps) => {
+  const { dogsMap } = useDogsFetcher(data);
 
   const getDogCount = (email: string) => {
     return dogsMap[email]?.length || 0;
@@ -46,12 +44,6 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
               dogCount={getDogCount(attendee.email)}
             />
           ))}
-
-          {isLoadingDogs && <LoadingDogs />}
-
-          {Object.keys(dogsMap).length === 0 &&
-            !isLoadingDogs &&
-            data.length > 0 && <NoDogs />}
         </TableBody>
       </Table>
     </div>

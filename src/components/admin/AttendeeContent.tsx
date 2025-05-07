@@ -1,4 +1,3 @@
-
 import LoadingState from "./LoadingState";
 import EmptyState from "./EmptyState";
 import AttendeeTable from "@/components/AttendeeTable";
@@ -26,7 +25,7 @@ const AttendeeContent = ({
       ) : (
         <>
           {filteredData.length > 0 ? (
-            <AttendeeTable data={filteredData} onDataUpdate={onDataUpdate} />
+            <AttendeeTable data={filteredData} />
           ) : (
             <EmptyState searchTerm={searchTerm} errorMessage={errorMessage} />
           )}
