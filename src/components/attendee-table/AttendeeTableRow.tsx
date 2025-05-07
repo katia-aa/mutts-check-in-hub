@@ -45,14 +45,14 @@ const AttendeeTableRow = ({ attendee, dogs }: AttendeeTableRowProps) => {
         </div>
       </TableCell>
       <TableCell>
-        <DogBadge count={dogs.length} />
-      </TableCell>
-      <TableCell>
         <StatusIndicator 
           hasVaccineRecord={!!attendee.vaccine_file_path} 
           hasWaiverSignature={!!attendee.signature_svg}
           dogCount={dogs.length}
         />
+      </TableCell>
+      <TableCell>
+        <DogBadge count={dogs.length} />
       </TableCell>
       <TableCell>
         <VaccineFileCell 

@@ -27,8 +27,8 @@ const AttendeeTable = ({ data }: AttendeeTableProps) => {
             <TableHead>Name/Email</TableHead>
             <TableHead className="hidden md:table-cell">Type</TableHead>
             <TableHead className="hidden md:table-cell">Event ID</TableHead>
-            <TableHead>Dogs</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Dogs</TableHead>
             <TableHead>Vaccine Files</TableHead>
             <TableHead>Waiver Signature</TableHead>
           </TableRow>
