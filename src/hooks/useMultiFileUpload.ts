@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { useCustomToast } from "@/hooks/use-custom-toast";
 import { attemptEdgeFunctionUpload } from "@/utils/uploadHelpers";
+import { UploadResult, UploadError } from "@/types/vaccineUpload";
 
 interface UseMultiFileUploadProps {
   email: string | null;
@@ -90,8 +92,8 @@ export const useMultiFileUpload = ({
           );
 
           if (!result.success) {
-            // Fixed: Extract error message correctly from UploadError type
-            throw new Error(`Failed to upload ${selectedFiles[i].name}`);
+            // Fixed: Correctly check for success property before accessing error
+            throw new Error(`Failed to upload ${selectedFiles[i].name}: ${result.success === false ? result.error : 'Unknown error'}`);
           }
 
           console.log(
