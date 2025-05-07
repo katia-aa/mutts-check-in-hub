@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +23,7 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
             reject(
               new Error("Connection timeout: Could not reach the edge function")
             ),
-          15000
+          10000
         );
       });
 
@@ -60,46 +59,18 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
         return;
       }
 
-      // Process attendees and identify humans vs dogs
       for (const attendee of eventbriteAttendees) {
-        // Skip entries without profiles
         if (!attendee.profile || !attendee.profile.email) {
           console.warn("Skipping attendee without email:", attendee);
           continue;
         }
 
-        // Extract common data
-        const email = attendee.profile.email;
-        const name = `${attendee.profile.first_name} ${attendee.profile.last_name}`;
-        const eventbriteId = attendee.id;
-
-        // Check if this is a dog entry or a human
-        const isDog = attendee.answers?.some(answer => 
-          answer.question_id === "dog_identifier_question" && answer.answer === "yes"
-        );
-
-        // If it's a dog, get the owner information
-        let ownerId = null;
-        if (isDog) {
-          const ownerAnswer = attendee.answers?.find(answer => 
-            answer.question_id === "owner_identifier_question"
-          );
-          ownerId = ownerAnswer?.answer || null;
-        }
-
-        // Generate a unique guest ID for relationship mapping
-        const guestId = `guest_${eventbriteId}`;
-
-        // Upsert the attendee record
         const { error } = await supabase.from("attendees").upsert(
           {
-            email: email,
-            name: name,
-            eventbrite_id: eventbriteId,
+            email: attendee.profile.email,
+            name: `${attendee.profile.first_name} ${attendee.profile.last_name}`,
+            eventbrite_id: attendee.id,
             vaccine_upload_status: false,
-            is_dog: isDog,
-            owner_id: ownerId,
-            guest_id: guestId,
           },
           {
             onConflict: "email",

@@ -1,9 +1,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Attendee, GroupedAttendee } from "@/types/attendee";
-import { CheckCircle, AlertTriangle, User, Dog, ChevronDown, ChevronRight } from "lucide-react";
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Attendee } from "@/types/attendee";
+import { CheckCircle, AlertTriangle, Users } from "lucide-react";
 
 interface AttendeeTableProps {
   data: Attendee[];
@@ -11,33 +9,6 @@ interface AttendeeTableProps {
 }
 
 const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
-  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
-
-  // Group dogs with their owners
-  const groupAttendees = (attendees: Attendee[]): GroupedAttendee[] => {
-    const humanAttendees = attendees.filter(attendee => !attendee.is_dog);
-    
-    return humanAttendees.map(human => {
-      const associatedDogs = attendees.filter(dog => 
-        dog.is_dog && dog.owner_id === human.guest_id
-      );
-      
-      return {
-        ...human,
-        dogs: associatedDogs
-      };
-    });
-  };
-  
-  const groupedData = groupAttendees(data);
-  
-  const toggleRow = (id: string) => {
-    setExpandedRows(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
-
   const getStatusIcon = (attendee: Attendee) => {
     const hasAllDocs = attendee.signature_svg && attendee.vaccine_file_path;
     
@@ -62,7 +33,6 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[40px]"></TableHead>
             <TableHead>Name/Email</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Status</TableHead>
@@ -70,87 +40,37 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {groupedData.map((attendee) => (
-            <>
-              <TableRow 
-                key={attendee.id}
-                className="hover:bg-gray-100 cursor-pointer"
-                onClick={() => attendee.dogs && attendee.dogs.length > 0 && toggleRow(attendee.id)}
-              >
-                <TableCell>
-                  {attendee.dogs && attendee.dogs.length > 0 ? (
-                    <button className="p-1 rounded-full hover:bg-gray-200">
-                      {expandedRows[attendee.id] ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                    </button>
-                  ) : null}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <User className="text-blue-500 w-5 h-5" />
-                    <div>
-                      <div className="font-medium">
-                        {attendee.name || attendee.email}
-                      </div>
-                      {attendee.is_guest ? (
-                        <div className="text-sm text-gray-500">
-                          Guest of: {attendee.parent_ticket_email}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-500">{attendee.email}</div>
-                      )}
+          {data.map((attendee) => (
+            <TableRow key={attendee.id}>
+              <TableCell>
+                <div>
+                  <div className="font-medium">
+                    {attendee.name || attendee.email}
+                  </div>
+                  {attendee.is_guest ? (
+                    <div className="text-sm text-gray-500">
+                      Guest of: {attendee.parent_ticket_email}
                     </div>
-                  </div>
-                </TableCell>
-                <TableCell>
+                  ) : (
+                    <div className="text-sm text-gray-500">{attendee.email}</div>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-gray-500" />
                   <span>{attendee.is_guest ? "Guest" : "Ticket Holder"}</span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(attendee)}
-                  </div>
-                </TableCell>
-                <TableCell className="text-gray-600">
-                  {getStatusText(attendee)}
-                </TableCell>
-              </TableRow>
-              
-              {/* Dog rows - shown when parent row is expanded */}
-              {attendee.dogs && attendee.dogs.length > 0 && expandedRows[attendee.id] && (
-                attendee.dogs.map(dog => (
-                  <TableRow key={dog.id} className="bg-gray-50">
-                    <TableCell></TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 ml-6">
-                        <Dog className="text-amber-500 w-5 h-5" />
-                        <div>
-                          <div className="font-medium">{dog.name}</div>
-                          <div className="text-xs text-gray-500">Dog</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-amber-600 font-medium">Dog</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {dog.vaccine_file_path ? (
-                          <CheckCircle className="text-green-500 w-5 h-5" />
-                        ) : (
-                          <AlertTriangle className="text-amber-500 w-5 h-5" />
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-gray-600">
-                      {dog.vaccine_file_path ? "Vaccine uploaded" : "Missing vaccine record"}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  {getStatusIcon(attendee)}
+                </div>
+              </TableCell>
+              <TableCell className="text-gray-600">
+                {getStatusText(attendee)}
+              </TableCell>
+            </TableRow>
           ))}
         </TableBody>
       </Table>

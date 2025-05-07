@@ -1,7 +1,6 @@
 
 export interface UseVaccineUploadProps {
   email: string | null;
-  dogId?: string | null;
   onUploadSuccess: () => void;
 }
 

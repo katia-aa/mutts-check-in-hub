@@ -5,7 +5,6 @@ import AdminHeader from "@/components/admin/AdminHeader";
 import ErrorDisplay from "@/components/admin/ErrorDisplay";
 import SearchBar from "@/components/admin/SearchBar";
 import AttendeeContent from "@/components/admin/AttendeeContent";
-import { Attendee } from "@/types/attendee";
 
 const Admin = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,17 +22,11 @@ const Admin = () => {
     syncEventbriteAttendees();
   }, []);
 
-  // Enhanced search to check both human and dog names/emails
   const filteredData = attendees.filter(
-    (attendee) => {
-      const searchLower = searchTerm.toLowerCase();
-      // Basic search for humans
-      const basicMatch = 
-        attendee.email?.toLowerCase().includes(searchLower) ||
-        (attendee.name && attendee.name.toLowerCase().includes(searchLower));
-      
-      return basicMatch;
-    }
+    (attendee) =>
+      attendee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (attendee.name &&
+        attendee.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (

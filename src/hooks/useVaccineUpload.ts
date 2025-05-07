@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { configureStorage } from "@/utils/configureStorage";
 import { attemptEdgeFunctionUpload } from "@/utils/uploadHelpers";
 import { UseVaccineUploadProps, UploadState } from "@/types/vaccineUpload";
 
-export const useVaccineUpload = ({ email, dogId, onUploadSuccess }: UseVaccineUploadProps) => {
+export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadProps) => {
   const [state, setState] = useState<UploadState>({
     file: null,
     preview: null,
@@ -69,7 +68,7 @@ export const useVaccineUpload = ({ email, dogId, onUploadSuccess }: UseVaccineUp
     }));
 
     try {
-      console.log("Submitting file for:", email, dogId ? `(Dog ID: ${dogId})` : '');
+      console.log("Submitting file for:", email);
       console.log("File details:", {
         name: state.file.name,
         size: state.file.size,
@@ -78,16 +77,8 @@ export const useVaccineUpload = ({ email, dogId, onUploadSuccess }: UseVaccineUp
 
       setState(prev => ({ ...prev, uploadProgress: 20 }));
       
-      // Create form data with additional dog ID if provided
-      const formData = new FormData();
-      formData.append('file', state.file);
-      formData.append('email', email);
-      if (dogId) {
-        formData.append('dogId', dogId);
-      }
-      
       // Use edge function for upload
-      let uploadResult = await attemptEdgeFunctionUpload(email, state.file, dogId);
+      let uploadResult = await attemptEdgeFunctionUpload(email, state.file);
       
       if (!uploadResult.success) {
         throw new Error(`Upload failed: ${'error' in uploadResult ? uploadResult.error : 'Unknown error occurred'}`);
