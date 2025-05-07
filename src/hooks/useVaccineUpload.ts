@@ -42,8 +42,18 @@ export const useVaccineUpload = ({ email, dogId, onUploadSuccess }: UseVaccineUp
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const clearFileSelection = () => {
+    setState(prev => ({
+      ...prev,
+      file: null,
+      preview: null,
+      uploadProgress: null
+    }));
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
     if (!state.file) {
       toast({
         variant: "destructive",
@@ -124,5 +134,6 @@ export const useVaccineUpload = ({ email, dogId, onUploadSuccess }: UseVaccineUp
     isConfiguringStorage: state.isConfiguringStorage,
     handleFileChange,
     handleSubmit,
+    clearFileSelection,
   };
 };
