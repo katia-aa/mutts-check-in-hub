@@ -74,8 +74,8 @@ export const useMultiFileUpload = ({
         
         const result = await attemptEdgeFunctionUpload(email, file);
         
-        if (!result.success && "error" in result) {
-          const errorMessage = "Unknown error occurred";
+        if (!result.success) {
+          const errorMessage = result.success === false ? result.error || "Unknown error" : "Unknown error occurred";
           throw new Error(`Error uploading ${file.name}: ${errorMessage}`);
         }
         

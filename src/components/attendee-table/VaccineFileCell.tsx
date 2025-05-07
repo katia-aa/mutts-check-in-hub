@@ -16,7 +16,15 @@ interface VaccineFileCellProps {
 }
 
 const VaccineFileCell = ({ attendee, dogs }: VaccineFileCellProps) => {
-  const attendeeFiles = attendee.vaccine_file_urls || [];
+  // Collect all attendee file URLs into one array
+  const attendeeFiles: string[] = [];
+  
+  // Add URLs from the array field first if it exists
+  if (attendee.vaccine_file_urls && attendee.vaccine_file_urls.length > 0) {
+    attendeeFiles.push(...attendee.vaccine_file_urls);
+  }
+  
+  // Add the single URL if it exists and isn't already in the array
   if (attendee.vaccine_file_url && !attendeeFiles.includes(attendee.vaccine_file_url)) {
     attendeeFiles.push(attendee.vaccine_file_url);
   }
@@ -24,8 +32,9 @@ const VaccineFileCell = ({ attendee, dogs }: VaccineFileCellProps) => {
   // Process dogs with vaccines
   const dogsWithVaccines = dogs.filter(dog => {
     // Check if dog has any vaccine files
-    const hasFiles = (dog.vaccine_file_urls && dog.vaccine_file_urls.length > 0) || !!dog.vaccine_file_url;
-    return hasFiles;
+    const hasArrayFiles = dog.vaccine_file_urls && dog.vaccine_file_urls.length > 0;
+    const hasSingleFile = !!dog.vaccine_file_url;
+    return hasArrayFiles || hasSingleFile;
   });
   
   if (attendeeFiles.length === 0 && dogsWithVaccines.length === 0) {
@@ -54,7 +63,7 @@ const VaccineFileCell = ({ attendee, dogs }: VaccineFileCellProps) => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>View uploaded human vaccine record</p>
+                  <p>View uploaded human vaccine record {attendeeFiles.length > 1 ? `#${index + 1}` : ''}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -63,7 +72,15 @@ const VaccineFileCell = ({ attendee, dogs }: VaccineFileCellProps) => {
       )}
 
       {dogsWithVaccines.map((dog) => {
-        const dogFiles = dog.vaccine_file_urls || [];
+        // Collect all dog file URLs into one array
+        const dogFiles: string[] = [];
+        
+        // Add URLs from the array field first if it exists
+        if (dog.vaccine_file_urls && dog.vaccine_file_urls.length > 0) {
+          dogFiles.push(...dog.vaccine_file_urls);
+        }
+        
+        // Add the single URL if it exists and isn't already in the array
         if (dog.vaccine_file_url && !dogFiles.includes(dog.vaccine_file_url)) {
           dogFiles.push(dog.vaccine_file_url);
         }
