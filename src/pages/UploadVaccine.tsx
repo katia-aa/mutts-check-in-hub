@@ -6,12 +6,32 @@ import FileUploadForm from "@/components/vaccine/FileUploadForm";
 import { useVaccineUpload } from "@/hooks/useVaccineUpload";
 import { useMultiFileUpload } from "@/hooks/useMultiFileUpload";
 import { useCustomToast } from "@/hooks/use-custom-toast";
+import { useDogManagement } from "@/hooks/useDogManagement";
 
 const UploadVaccine = () => {
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email");
   const navigate = useNavigate();
   const { toast } = useCustomToast();
+  const [hasMultipleDogs, setHasMultipleDogs] = useState(false);
+  
+  // Fetch dogs for this user
+  const { dogs, fetchDogs, isLoading: isLoadingDogs } = useDogManagement(email);
+  
+  useEffect(() => {
+    if (email) {
+      fetchDogs();
+    }
+  }, [email]);
+  
+  // Update the multiple dogs state when dogs data is loaded
+  useEffect(() => {
+    if (dogs && dogs.length > 1) {
+      setHasMultipleDogs(true);
+    } else {
+      setHasMultipleDogs(false);
+    }
+  }, [dogs]);
   
   const handleUploadSuccess = () => {
     toast.success({
@@ -50,11 +70,16 @@ const UploadVaccine = () => {
     onUploadSuccess: handleUploadSuccess
   });
 
+  // Determine subtitle based on dog count
+  const subtitle = hasMultipleDogs 
+    ? "Upload your pups' vaccine records. Please upload one for each dog you're bringing." 
+    : "Upload your pup's vaccine record and you're good to go";
+
   return (
     <CheckInLayout
       step={3}
       title="Last Step!"
-      subtitle="Upload your pup's vaccine record and you're good to go"
+      subtitle={subtitle}
     >
       <FileUploadForm
         isUploading={isUploading}
@@ -68,6 +93,8 @@ const UploadVaccine = () => {
         onFileChange={handleFileChange}
         onSubmit={handleSubmit}
         onRemoveFile={handleRemoveFile}
+        allowMultiple={hasMultipleDogs}
+        isLoadingDogs={isLoadingDogs}
       />
     </CheckInLayout>
   );

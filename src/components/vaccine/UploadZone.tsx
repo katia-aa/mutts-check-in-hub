@@ -30,7 +30,11 @@ const UploadZone = ({
         ref={fileInputRef}
       />
       <p className="mt-2 text-sm text-gray-500">
-        {multiple ? "Select multiple files - " : ""}Accepts JPG, PNG, or PDF (max 10MB each)
+        {multiple 
+          ? "Select multiple files - one for each of your dogs" 
+          : "Select a file for your pup"}
+        <br />
+        Accepts JPG, PNG, or PDF (max 10MB each)
       </p>
       {isConfiguringStorage && (
         <p className="mt-1 text-xs text-blue-600 animate-pulse">

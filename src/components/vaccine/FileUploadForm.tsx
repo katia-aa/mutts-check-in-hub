@@ -19,6 +19,8 @@ interface FileUploadFormProps {
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
   onRemoveFile: (index: number) => void;
+  allowMultiple?: boolean;
+  isLoadingDogs?: boolean;
 }
 
 const FileUploadForm = ({
@@ -32,7 +34,9 @@ const FileUploadForm = ({
   uploadingFileIndex,
   onFileChange,
   onSubmit,
-  onRemoveFile
+  onRemoveFile,
+  allowMultiple = false,
+  isLoadingDogs = false
 }: FileUploadFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -49,9 +53,9 @@ const FileUploadForm = ({
       <div className="space-y-4">
         <UploadZone
           onFileChange={handleFileChange}
-          isDisabled={isUploading || isConfiguringStorage || formSubmitted}
+          isDisabled={isUploading || isConfiguringStorage || formSubmitted || isLoadingDogs}
           isConfiguringStorage={isConfiguringStorage}
-          multiple={true}
+          multiple={allowMultiple}
           fileInputRef={fileInputRef}
         />
         
@@ -82,10 +86,10 @@ const FileUploadForm = ({
       <Button
         type="submit"
         className="w-full bg-mutts-secondary hover:bg-mutts-secondary/90 text-white rounded-xl h-12"
-        disabled={isUploading || isConfiguringStorage || selectedFiles.length === 0 || formSubmitted}
+        disabled={isUploading || isConfiguringStorage || selectedFiles.length === 0 || formSubmitted || isLoadingDogs}
       >
-        {isUploading ? "Uploading..." : (isConfiguringStorage ? "Preparing..." : formSubmitted ? "Processing..." : "Complete Check-In")}
-        {!isUploading && !isConfiguringStorage && !formSubmitted && <ArrowRight className="ml-2" />}
+        {isLoadingDogs ? "Loading your pet info..." : (isUploading ? "Uploading..." : (isConfiguringStorage ? "Preparing..." : formSubmitted ? "Processing..." : "Complete Check-In"))}
+        {!isUploading && !isConfiguringStorage && !formSubmitted && !isLoadingDogs && <ArrowRight className="ml-2" />}
       </Button>
     </form>
   );
