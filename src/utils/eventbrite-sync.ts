@@ -17,6 +17,7 @@ export const handleDatabaseError = (error: any, setRlsError: (value: boolean) =>
 // Process a human attendee from Eventbrite
 export const processHumanAttendee = async (
   attendee: any,
+  eventId: string,
   setRlsError: (value: boolean) => void,
   setErrorMessage: (value: string | null) => void
 ) => {
@@ -25,6 +26,7 @@ export const processHumanAttendee = async (
       email: attendee.profile.email,
       name: `${attendee.profile.first_name} ${attendee.profile.last_name}`,
       eventbrite_id: attendee.id,
+      event_id: eventId,
       vaccine_upload_status: false,
     },
     {
@@ -47,15 +49,17 @@ export const generateDefaultDogName = async (ownerEmail: string, index: number):
 // Delete existing dogs for an owner to avoid duplicates on refresh
 export const deleteExistingDogsForOwner = async (
   ownerEmail: string,
+  eventId: string,
   setRlsError: (value: boolean) => void,
   setErrorMessage: (value: string | null) => void
 ) => {
-  console.log(`Removing existing dogs for owner ${ownerEmail} before adding new ones`);
+  console.log(`Removing existing dogs for owner ${ownerEmail} in event ${eventId} before adding new ones`);
   
   const { error } = await supabase
     .from("dogs")
     .delete()
-    .eq("owner_email", ownerEmail);
+    .eq("owner_email", ownerEmail)
+    .eq("event_id", eventId);
     
   if (error) {
     console.error(`Error removing existing dogs for ${ownerEmail}:`, error);
@@ -69,13 +73,14 @@ export const deleteExistingDogsForOwner = async (
 export const processDogs = async (
   ownerEmail: string, 
   dogs: string[],
+  eventId: string,
   setRlsError: (value: boolean) => void,
   setErrorMessage: (value: string | null) => void
 ) => {
-  console.log(`Processing ${dogs.length} dogs for owner ${ownerEmail}`);
+  console.log(`Processing ${dogs.length} dogs for owner ${ownerEmail} in event ${eventId}`);
   
   // Delete existing dogs for this owner to prevent duplicates on refresh
-  const shouldStop = await deleteExistingDogsForOwner(ownerEmail, setRlsError, setErrorMessage);
+  const shouldStop = await deleteExistingDogsForOwner(ownerEmail, eventId, setRlsError, setErrorMessage);
   if (shouldStop) return true;
   
   // Add all dogs for this owner from the current sync
@@ -87,14 +92,15 @@ export const processDogs = async (
       dogName = await generateDefaultDogName(ownerEmail, i);
     }
     
-    console.log(`Adding dog: ${dogName} for owner ${ownerEmail}`);
+    console.log(`Adding dog: ${dogName} for owner ${ownerEmail} in event ${eventId}`);
     
-    // Insert the dog record
+    // Insert the dog record with event_id
     const { error: dogError } = await supabase
       .from("dogs")
       .insert({
         name: dogName,
         owner_email: ownerEmail,
+        event_id: eventId,
         vaccine_upload_status: false,
       });
 
@@ -127,6 +133,7 @@ export const fetchEventbriteAttendees = async () => {
 // Process all attendees from Eventbrite 
 export const processEventbriteAttendees = async (
   eventbriteAttendees: any[],
+  eventId: string,
   setRlsError: (value: boolean) => void,
   setErrorMessage: (value: string | null) => void
 ) => {
@@ -158,7 +165,7 @@ export const processEventbriteAttendees = async (
       dogRegistrations[ownerEmail].dogs.push(dogName);
     } else {
       // Process as human attendee
-      const shouldStop = await processHumanAttendee(attendee, setRlsError, setErrorMessage);
+      const shouldStop = await processHumanAttendee(attendee, eventId, setRlsError, setErrorMessage);
       if (shouldStop) return false;
     }
   }
@@ -166,7 +173,7 @@ export const processEventbriteAttendees = async (
   // Process and save all dogs in a separate pass to ensure all human records exist first
   for (const ownerEmail in dogRegistrations) {
     const { dogs } = dogRegistrations[ownerEmail];
-    const shouldStop = await processDogs(ownerEmail, dogs, setRlsError, setErrorMessage);
+    const shouldStop = await processDogs(ownerEmail, dogs, eventId, setRlsError, setErrorMessage);
     if (shouldStop) return false;
   }
 

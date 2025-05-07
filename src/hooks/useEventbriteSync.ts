@@ -33,6 +33,12 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
       }
 
       const eventbriteAttendees = response.data?.attendees || [];
+      const eventId = response.data?.event_id;
+
+      if (!eventId) {
+        console.error("No event ID returned from Eventbrite");
+        throw new Error("Missing event ID from Eventbrite response");
+      }
 
       if (eventbriteAttendees.length === 0) {
         console.warn("No attendees found in Eventbrite response");
@@ -48,9 +54,10 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
         return;
       }
 
-      // Process all attendees from Eventbrite
+      // Process all attendees from Eventbrite with event ID
       const success = await processEventbriteAttendees(
         eventbriteAttendees,
+        eventId,
         setRlsError,
         setErrorMessage
       );

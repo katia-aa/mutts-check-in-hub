@@ -1,3 +1,4 @@
+
 import {
   Table,
   TableBody,
@@ -31,6 +32,9 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
   >({});
   const [isLoadingDogs, setIsLoadingDogs] = useState(false);
 
+  // Get unique event IDs from attendees
+  const eventIds = [...new Set(data.map(attendee => attendee.event_id).filter(Boolean))];
+
   // Fetch dogs for all attendees
   useEffect(() => {
     const fetchDogs = async () => {
@@ -44,10 +48,22 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
           return;
         }
 
-        const { data: dogsData, error } = await supabase
+        // Get all event IDs present in the attendee data
+        const eventIdFilters = eventIds.length > 0 
+          ? eventIds.map(id => `event_id.eq.${id}`).join(',') 
+          : null;
+
+        let query = supabase
           .from("dogs")
           .select("*")
           .in("owner_email", emails);
+          
+        // Add event_id filter if available
+        if (eventIdFilters) {
+          query = query.or(eventIdFilters);
+        }
+
+        const { data: dogsData, error } = await query;
 
         if (error) {
           console.error("Error fetching dogs:", error);
@@ -72,7 +88,7 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
     };
 
     fetchDogs();
-  }, [data]);
+  }, [data, eventIds]);
 
   const getStatusIcon = (entity: Attendee | Dog) => {
     const hasAllDocs = entity.vaccine_file_path;
@@ -112,6 +128,7 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
           <TableRow>
             <TableHead>Name/Email</TableHead>
             <TableHead>Type</TableHead>
+            <TableHead>Event ID</TableHead>
             <TableHead>Dogs</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Details</TableHead>
@@ -146,6 +163,11 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
                   </div>
                 </TableCell>
                 <TableCell>
+                  <div className="text-sm text-gray-600">
+                    {attendee.event_id || "N/A"}
+                  </div>
+                </TableCell>
+                <TableCell>
                   {hasDogs(attendee.email) ? (
                     <div className="flex items-center gap-2">
                       <DogIcon className="w-4 h-4 text-gray-500" />
@@ -171,7 +193,7 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
 
           {isLoadingDogs && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-4">
+              <TableCell colSpan={6} className="text-center py-4">
                 <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
                 <div className="mt-2 text-sm text-gray-500">
                   Loading pets...
@@ -185,7 +207,7 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
             data.length > 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={6}
                   className="text-center py-4 text-gray-500"
                 >
                   No pets registered for these attendees

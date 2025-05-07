@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string
+          event_id: string | null
           eventbrite_id: string | null
           guest_name: string | null
           id: string
@@ -28,6 +29,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           email: string
+          event_id?: string | null
           eventbrite_id?: string | null
           guest_name?: string | null
           id?: string
@@ -43,6 +45,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           email?: string
+          event_id?: string | null
           eventbrite_id?: string | null
           guest_name?: string | null
           id?: string
@@ -60,6 +63,7 @@ export type Database = {
       dogs: {
         Row: {
           created_at: string | null
+          event_id: string | null
           id: string
           name: string
           owner_email: string
@@ -70,6 +74,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          event_id?: string | null
           id?: string
           name: string
           owner_email: string
@@ -80,6 +85,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          event_id?: string | null
           id?: string
           name?: string
           owner_email?: string

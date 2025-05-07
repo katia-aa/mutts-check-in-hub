@@ -5,6 +5,7 @@ export interface Attendee {
   name: string | null;
   vaccine_upload_status: boolean;
   eventbrite_id?: string;
+  event_id?: string | null;
   submissionTime?: string;
   signature_svg?: string | null;
   vaccine_file_path?: string | null;

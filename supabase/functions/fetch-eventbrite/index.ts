@@ -104,7 +104,8 @@ serve(async (req) => {
       const ticketClassName = attendee.ticket_class?.name || "Unknown";
       return {
         ...attendee,
-        ticket_class_name: ticketClassName
+        ticket_class_name: ticketClassName,
+        event_id: EVENT_ID // Add event_id to each attendee
       };
     });
     
@@ -116,7 +117,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         ...data,
-        attendees: processedAttendees
+        attendees: processedAttendees,
+        event_id: EVENT_ID // Also include event_id at the top level
       }),
       {
         headers: {
