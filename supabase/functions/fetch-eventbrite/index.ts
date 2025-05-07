@@ -39,7 +39,7 @@ serve(async (req) => {
     }
     
     console.log(`Using EVENT_ID: ${EVENT_ID}`);
-    const response = await fetch(`${BASE_URL}/events/${EVENT_ID}/attendees/`, {
+    const response = await fetch(`${BASE_URL}/events/${EVENT_ID}/attendees/?expand=profile,answers`, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
@@ -103,7 +103,23 @@ serve(async (req) => {
       `Successfully fetched ${data.attendees.length} attendees from Eventbrite`
     );
     
-    return new Response(JSON.stringify(data), {
+    // Process the data to ensure it includes answers and profile data
+    const processedAttendees = data.attendees.map((attendee: any) => {
+      // Ensure the profile and answers fields are present
+      if (!attendee.profile) {
+        attendee.profile = { email: null, first_name: "", last_name: "" };
+      }
+      
+      if (!attendee.answers) {
+        attendee.answers = [];
+      }
+      
+      return attendee;
+    });
+    
+    return new Response(JSON.stringify({ 
+      attendees: processedAttendees 
+    }), {
       headers: {
         ...corsHeaders,
         "Content-Type": "application/json",

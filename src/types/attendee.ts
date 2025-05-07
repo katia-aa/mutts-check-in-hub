@@ -12,4 +12,14 @@ export interface Attendee {
   is_guest?: boolean | null;
   parent_ticket_email?: string | null;
   guest_name?: string | null;
+  
+  // New fields for dog/human relationship
+  is_dog?: boolean;
+  owner_id?: string;
+  guest_id?: string;
+}
+
+// New type for displaying grouped attendees
+export interface GroupedAttendee extends Attendee {
+  dogs?: Attendee[];
 }

@@ -20,19 +20,24 @@ const AttendeeContent = ({
   onDataUpdate,
 }: AttendeeContentProps) => {
   return (
-    <>
+    <div className="space-y-4">
       {isLoading ? (
         <LoadingState />
       ) : (
         <>
           {filteredData.length > 0 ? (
-            <AttendeeTable data={filteredData} onDataUpdate={onDataUpdate} />
+            <div>
+              <div className="mb-4 text-sm text-gray-500">
+                Showing {filteredData.length} attendee{filteredData.length !== 1 ? 's' : ''}
+              </div>
+              <AttendeeTable data={filteredData} onDataUpdate={onDataUpdate} />
+            </div>
           ) : (
             <EmptyState searchTerm={searchTerm} errorMessage={errorMessage} />
           )}
         </>
       )}
-    </>
+    </div>
   );
 };
 

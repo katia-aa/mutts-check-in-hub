@@ -30,13 +30,15 @@ Deno.serve(async (req) => {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const email = formData.get('email') as string;
+    const dogId = formData.get('dogId') as string;
     
     console.log("Form data parsed:", { 
       hasFile: !!file, 
       fileName: file?.name,
       fileSize: file?.size,
       fileType: file?.type,
-      email 
+      email,
+      dogId: dogId || 'N/A'
     });
     
     if (!file || !email) {
@@ -47,7 +49,9 @@ Deno.serve(async (req) => {
     const safeEmail = email.replace(/[^a-zA-Z0-9.@]/g, '_');
     const fileExt = file.name.split('.').pop() || '';
     const fileName = `${Date.now()}.${fileExt}`;
-    const filePath = `${safeEmail}/${fileName}`;
+    const filePath = dogId 
+      ? `${safeEmail}/dogs/${dogId}/${fileName}`
+      : `${safeEmail}/${fileName}`;
 
     console.log(`Uploading file ${file.name} (${file.size} bytes) to ${filePath}`);
 
@@ -71,7 +75,9 @@ Deno.serve(async (req) => {
       .from('vaccine_records')
       .getPublicUrl(filePath);
 
-    // Update the attendee record
+    // Update the appropriate record (either human or dog)
+    let updateTarget = dogId ? { id: dogId } : { email: email };
+    
     const { error: updateError } = await supabaseAdmin
       .from('attendees')
       .update({
@@ -80,7 +86,7 @@ Deno.serve(async (req) => {
         vaccine_file_url: publicUrl,
         updated_at: new Date().toISOString(),
       })
-      .eq('email', email);
+      .match(updateTarget);
 
     if (updateError) {
       console.error('Database update error:', updateError);
