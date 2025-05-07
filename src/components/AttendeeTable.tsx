@@ -1,7 +1,10 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Attendee } from "@/types/attendee";
-import { CheckCircle, AlertTriangle, Users } from "lucide-react";
+import { Dog } from "@/types/dog";
+import { CheckCircle, AlertTriangle, Users, Dog as DogIcon, ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AttendeeTableProps {
   data: Attendee[];
@@ -9,8 +12,55 @@ interface AttendeeTableProps {
 }
 
 const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
-  const getStatusIcon = (attendee: Attendee) => {
-    const hasAllDocs = attendee.signature_svg && attendee.vaccine_file_path;
+  const [dogsMap, setDogsMap] = useState<Record<string, Dog[]>>({});
+  const [expandedAttendees, setExpandedAttendees] = useState<Record<string, boolean>>({});
+  const [isLoadingDogs, setIsLoadingDogs] = useState(false);
+
+  // Fetch dogs for all attendees
+  useEffect(() => {
+    const fetchDogs = async () => {
+      setIsLoadingDogs(true);
+      try {
+        // Get all unique emails
+        const emails = data.map(attendee => attendee.email);
+        
+        if (emails.length === 0) {
+          setDogsMap({});
+          return;
+        }
+        
+        const { data: dogsData, error } = await supabase
+          .from("dogs")
+          .select("*")
+          .in("owner_email", emails);
+          
+        if (error) {
+          console.error("Error fetching dogs:", error);
+          return;
+        }
+        
+        // Group dogs by owner email
+        const dogsByOwner: Record<string, Dog[]> = {};
+        dogsData.forEach((dog: Dog) => {
+          if (!dogsByOwner[dog.owner_email]) {
+            dogsByOwner[dog.owner_email] = [];
+          }
+          dogsByOwner[dog.owner_email].push(dog);
+        });
+        
+        setDogsMap(dogsByOwner);
+      } catch (error) {
+        console.error("Error fetching dogs:", error);
+      } finally {
+        setIsLoadingDogs(false);
+      }
+    };
+    
+    fetchDogs();
+  }, [data]);
+
+  const getStatusIcon = (entity: Attendee | Dog) => {
+    const hasAllDocs = entity.vaccine_file_path;
     
     if (hasAllDocs) {
       return <CheckCircle className="text-green-500 w-5 h-5" />;
@@ -18,14 +68,22 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
     return <AlertTriangle className="text-amber-500 w-5 h-5" />;
   };
 
-  const getStatusText = (attendee: Attendee) => {
-    if (attendee.signature_svg && attendee.vaccine_file_path) {
-      return "All documents uploaded";
+  const getStatusText = (entity: Attendee | Dog) => {
+    if (entity.vaccine_file_path) {
+      return "Vaccine record uploaded";
     }
-    const missing = [];
-    if (!attendee.signature_svg) missing.push("signature");
-    if (!attendee.vaccine_file_path) missing.push("vaccine record");
-    return `Missing: ${missing.join(" & ")}`;
+    return "Missing vaccine record";
+  };
+
+  const toggleExpand = (attendeeId: string) => {
+    setExpandedAttendees(prev => ({
+      ...prev,
+      [attendeeId]: !prev[attendeeId]
+    }));
+  };
+
+  const hasDogs = (email: string) => {
+    return dogsMap[email] && dogsMap[email].length > 0;
   };
 
   return (
@@ -41,37 +99,95 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
         </TableHeader>
         <TableBody>
           {data.map((attendee) => (
-            <TableRow key={attendee.id}>
-              <TableCell>
-                <div>
-                  <div className="font-medium">
-                    {attendee.name || attendee.email}
-                  </div>
-                  {attendee.is_guest ? (
-                    <div className="text-sm text-gray-500">
-                      Guest of: {attendee.parent_ticket_email}
+            <>
+              <TableRow key={attendee.id} className="hover:bg-gray-50">
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {hasDogs(attendee.email) && (
+                      <button onClick={() => toggleExpand(attendee.id)} className="p-1 rounded-full hover:bg-gray-100">
+                        {expandedAttendees[attendee.id] ? 
+                          <ChevronDown className="w-4 h-4 text-gray-500" /> : 
+                          <ChevronRight className="w-4 h-4 text-gray-500" />}
+                      </button>
+                    )}
+                    <div>
+                      <div className="font-medium">
+                        {attendee.name || attendee.email}
+                      </div>
+                      {attendee.is_guest ? (
+                        <div className="text-sm text-gray-500">
+                          Guest of: {attendee.parent_ticket_email}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">{attendee.email}</div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="text-sm text-gray-500">{attendee.email}</div>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-gray-500" />
-                  <span>{attendee.is_guest ? "Guest" : "Ticket Holder"}</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(attendee)}
-                </div>
-              </TableCell>
-              <TableCell className="text-gray-600">
-                {getStatusText(attendee)}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-gray-500" />
+                    <span>{attendee.is_guest ? "Guest" : "Ticket Holder"}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon(attendee)}
+                  </div>
+                </TableCell>
+                <TableCell className="text-gray-600">
+                  {getStatusText(attendee)}
+                </TableCell>
+              </TableRow>
+              
+              {/* Show dogs if expanded */}
+              {expandedAttendees[attendee.id] && dogsMap[attendee.email]?.map((dog) => (
+                <TableRow key={dog.id} className="bg-gray-50">
+                  <TableCell>
+                    <div className="flex items-center gap-2 pl-8">
+                      <div>
+                        <div className="font-medium">
+                          {dog.name}
+                        </div>
+                        <div className="text-sm text-gray-500">Dog</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <DogIcon className="w-4 h-4 text-gray-500" />
+                      <span>Pet</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(dog)}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-gray-600">
+                    {getStatusText(dog)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </>
+          ))}
+          
+          {isLoadingDogs && (
+            <TableRow>
+              <TableCell colSpan={4} className="text-center py-4">
+                <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+                <div className="mt-2 text-sm text-gray-500">Loading pets...</div>
               </TableCell>
             </TableRow>
-          ))}
+          )}
+          
+          {Object.keys(dogsMap).length === 0 && !isLoadingDogs && data.length > 0 && (
+            <TableRow>
+              <TableCell colSpan={4} className="text-center py-4 text-gray-500">
+                No pets registered for these attendees
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </div>

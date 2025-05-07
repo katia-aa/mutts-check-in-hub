@@ -30,13 +30,15 @@ Deno.serve(async (req) => {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const email = formData.get('email') as string;
+    const dogId = formData.get('dogId') as string | null;
     
     console.log("Form data parsed:", { 
       hasFile: !!file, 
       fileName: file?.name,
       fileSize: file?.size,
       fileType: file?.type,
-      email 
+      email,
+      dogId: dogId || 'Not provided'
     });
     
     if (!file || !email) {
@@ -47,7 +49,9 @@ Deno.serve(async (req) => {
     const safeEmail = email.replace(/[^a-zA-Z0-9.@]/g, '_');
     const fileExt = file.name.split('.').pop() || '';
     const fileName = `${Date.now()}.${fileExt}`;
-    const filePath = `${safeEmail}/${fileName}`;
+    const filePath = dogId 
+      ? `${safeEmail}/dogs/${dogId}/${fileName}` 
+      : `${safeEmail}/${fileName}`;
 
     console.log(`Uploading file ${file.name} (${file.size} bytes) to ${filePath}`);
 
@@ -71,20 +75,38 @@ Deno.serve(async (req) => {
       .from('vaccine_records')
       .getPublicUrl(filePath);
 
-    // Update the attendee record
-    const { error: updateError } = await supabaseAdmin
-      .from('attendees')
-      .update({
-        vaccine_upload_status: true,
-        vaccine_file_path: filePath,
-        vaccine_file_url: publicUrl,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('email', email);
+    // Update the appropriate record based on whether it's a dog or human
+    if (dogId) {
+      const { error: updateError } = await supabaseAdmin
+        .from('dogs')
+        .update({
+          vaccine_upload_status: true,
+          vaccine_file_path: filePath,
+          vaccine_file_url: publicUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', dogId);
 
-    if (updateError) {
-      console.error('Database update error:', updateError);
-      throw new Error(`Database update failed: ${updateError.message}`);
+      if (updateError) {
+        console.error('Dog record update error:', updateError);
+        throw new Error(`Dog record update failed: ${updateError.message}`);
+      }
+    } else {
+      // Update the attendee record
+      const { error: updateError } = await supabaseAdmin
+        .from('attendees')
+        .update({
+          vaccine_upload_status: true,
+          vaccine_file_path: filePath,
+          vaccine_file_url: publicUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('email', email);
+
+      if (updateError) {
+        console.error('Attendee record update error:', updateError);
+        throw new Error(`Attendee record update failed: ${updateError.message}`);
+      }
     }
 
     return new Response(

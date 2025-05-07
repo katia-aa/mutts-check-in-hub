@@ -1,10 +1,11 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { configureStorage } from "@/utils/configureStorage";
 import { attemptEdgeFunctionUpload } from "@/utils/uploadHelpers";
 import { UseVaccineUploadProps, UploadState } from "@/types/vaccineUpload";
 
-export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadProps) => {
+export const useVaccineUpload = ({ email, dogId, onUploadSuccess }: UseVaccineUploadProps) => {
   const [state, setState] = useState<UploadState>({
     file: null,
     preview: null,
@@ -47,7 +48,7 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
       toast({
         variant: "destructive",
         title: "Oops! Missing vaccine record",
-        description: "Please upload your pup's vaccine record first",
+        description: "Please upload the vaccine record first",
       });
       return;
     }
@@ -69,6 +70,10 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
 
     try {
       console.log("Submitting file for:", email);
+      if (dogId) {
+        console.log("For dog ID:", dogId);
+      }
+      
       console.log("File details:", {
         name: state.file.name,
         size: state.file.size,
@@ -78,7 +83,7 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
       setState(prev => ({ ...prev, uploadProgress: 20 }));
       
       // Use edge function for upload
-      let uploadResult = await attemptEdgeFunctionUpload(email, state.file);
+      let uploadResult = await attemptEdgeFunctionUpload(email, state.file, dogId);
       
       if (!uploadResult.success) {
         throw new Error(`Upload failed: ${'error' in uploadResult ? uploadResult.error : 'Unknown error occurred'}`);
@@ -89,7 +94,9 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
 
       toast({
         title: "Yay! You're all set! 🎉",
-        description: "Can't wait to see you and your pup at the event!",
+        description: dogId 
+          ? "Your pet's vaccine record has been uploaded successfully!" 
+          : "Can't wait to see you and your pup at the event!",
       });
 
       onUploadSuccess();
@@ -98,7 +105,7 @@ export const useVaccineUpload = ({ email, onUploadSuccess }: UseVaccineUploadPro
       toast({
         variant: "destructive",
         title: "Upload Error",
-        description: error.message || "There was an error uploading your vaccine record. Please try again.",
+        description: error.message || "There was an error uploading the vaccine record. Please try again.",
       });
     } finally {
       setState(prev => ({ 

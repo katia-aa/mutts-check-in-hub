@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { UploadResult } from "@/types/vaccineUpload";
 
@@ -95,7 +96,8 @@ export const attemptSignedUrlUpload = async (
 
 export const attemptEdgeFunctionUpload = async (
   email: string,
-  file: File
+  file: File,
+  dogId?: string
 ): Promise<UploadResult> => {
   try {
     console.log("Attempting upload via edge function...");
@@ -103,6 +105,10 @@ export const attemptEdgeFunctionUpload = async (
     const formData = new FormData();
     formData.append("file", file);
     formData.append("email", email);
+    
+    if (dogId) {
+      formData.append("dogId", dogId);
+    }
 
     console.log(
       "FormData created with file:",
@@ -113,6 +119,7 @@ export const attemptEdgeFunctionUpload = async (
       file.type
     );
     console.log("Email added to FormData:", email);
+    if (dogId) console.log("Dog ID added to FormData:", dogId);
 
     const { data, error } = await supabase.functions.invoke("upload-vaccine", {
       body: formData,
