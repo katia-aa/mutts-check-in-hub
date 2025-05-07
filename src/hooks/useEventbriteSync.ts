@@ -61,6 +61,10 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
       }
 
       // Process attendees and identify dogs
+      // Create a map to track dog registration data per owner
+      const dogRegistrations: Record<string, { owner: string, dogs: string[] }> = {};
+      
+      // First pass: identify all dogs and their owners
       for (const attendee of eventbriteAttendees) {
         if (!attendee.profile || !attendee.profile.email) {
           console.warn("Skipping attendee without email:", attendee);
@@ -70,35 +74,20 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
         const isDog = attendee.ticket_class_name === "Mutts Access Pass (For Doggos)";
         
         if (isDog) {
-          // Process as dog - find owner and add as a dog
           const ownerEmail = attendee.profile.email;
-          console.log(`Processing dog with owner email: ${ownerEmail}, name: ${attendee.profile.first_name}`);
+          const dogName = attendee.profile.first_name;
           
-          // Insert dog record using on conflict with the unique constraint
-          const { error: dogError } = await supabase.from("dogs").upsert(
-            {
-              name: attendee.profile.first_name,
-              owner_email: ownerEmail,
-              vaccine_upload_status: false,
-            },
-            {
-              onConflict: "owner_email,name",
-              ignoreDuplicates: false
-            }
-          );
-
-          if (dogError) {
-            console.error("Error syncing dog:", dogError);
-            if (
-              dogError.code === "42501" ||
-              dogError.message?.includes("row-level security")
-            ) {
-              setRlsError(true);
-              setErrorMessage(
-                "Row Level Security policy violation: The database is preventing insertion of dog data."
-              );
-              break;
-            }
+          // Track this dog registration
+          if (!dogRegistrations[ownerEmail]) {
+            dogRegistrations[ownerEmail] = { 
+              owner: ownerEmail, 
+              dogs: []
+            };
+          }
+          
+          // Prevent duplicate dog names (just in case)
+          if (!dogRegistrations[ownerEmail].dogs.includes(dogName)) {
+            dogRegistrations[ownerEmail].dogs.push(dogName);
           }
         } else {
           // Process as human attendee
@@ -123,6 +112,52 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
               setRlsError(true);
               setErrorMessage(
                 "Row Level Security policy violation: The database is preventing insertion of attendee data."
+              );
+              break;
+            }
+          }
+        }
+      }
+
+      // Process and save all dogs in a separate pass to ensure all human records exist first
+      for (const ownerEmail in dogRegistrations) {
+        const { dogs } = dogRegistrations[ownerEmail];
+        console.log(`Processing ${dogs.length} dogs for owner ${ownerEmail}`);
+        
+        for (const dogName of dogs) {
+          console.log(`Adding dog: ${dogName} for owner ${ownerEmail}`);
+          
+          // First check if this exact dog already exists
+          const { data: existingDogs } = await supabase
+            .from("dogs")
+            .select("id, name")
+            .eq("owner_email", ownerEmail)
+            .eq("name", dogName);
+            
+          // Skip if the exact dog already exists
+          if (existingDogs && existingDogs.length > 0) {
+            console.log(`Dog ${dogName} already exists for owner ${ownerEmail}, skipping`);
+            continue;
+          }
+          
+          // Insert the dog record
+          const { error: dogError } = await supabase
+            .from("dogs")
+            .insert({
+              name: dogName,
+              owner_email: ownerEmail,
+              vaccine_upload_status: false,
+            });
+
+          if (dogError) {
+            console.error(`Error syncing dog ${dogName}:`, dogError);
+            if (
+              dogError.code === "42501" ||
+              dogError.message?.includes("row-level security")
+            ) {
+              setRlsError(true);
+              setErrorMessage(
+                "Row Level Security policy violation: The database is preventing insertion of dog data."
               );
               break;
             }
