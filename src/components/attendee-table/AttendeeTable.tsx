@@ -1,7 +1,6 @@
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -9,7 +8,6 @@ import {
 import { Attendee } from "@/types/attendee";
 import AttendeeTableRow from "./AttendeeTableRow";
 import LoadingDogs from "./LoadingDogs";
-import NoDogs from "./NoDogs";
 import { useDogsFetcher } from "./useDogsFetcher";
 
 interface AttendeeTableProps {

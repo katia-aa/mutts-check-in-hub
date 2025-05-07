@@ -9,7 +9,7 @@ const TicketHolder = () => {
   return (
     <CheckInLayout
       step={1}
-      title="Welcome Back, Ticket Holder!"
+      title="Howdy!"
       subtitle="Let's verify your registration 🐾"
     >
       <div className="space-y-6">
