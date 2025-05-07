@@ -66,8 +66,7 @@ const DogVaccineUpload = () => {
   // Handle adding a new dog
   const handleAddDog = async () => {
     if (!newDogName.trim()) {
-      toast({
-        variant: "destructive",
+      toast.error({
         title: "Dog name required",
         description: "Please enter your dog's name"
       });
@@ -85,8 +84,7 @@ const DogVaccineUpload = () => {
     const allDogsHaveVaccines = dogs.every(dog => dog.vaccine_upload_status);
     
     if (!dogs.length) {
-      toast({
-        variant: "destructive",
+      toast.error({
         title: "No dogs added",
         description: "Please add at least one dog before completing check-in"
       });
@@ -94,8 +92,7 @@ const DogVaccineUpload = () => {
     }
     
     if (!allDogsHaveVaccines) {
-      toast({
-        variant: "destructive",
+      toast.error({
         title: "Missing vaccine records",
         description: "Please upload vaccine records for all dogs"
       });
