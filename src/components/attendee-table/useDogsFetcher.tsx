@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Attendee } from "@/types/attendee";
 import { Dog } from "@/types/dog";
@@ -12,18 +12,34 @@ interface UseDogsFetcherResult {
 export function useDogsFetcher(attendees: Attendee[]): UseDogsFetcherResult {
   const [dogsMap, setDogsMap] = useState<Record<string, Dog[]>>({});
   const [isLoadingDogs, setIsLoadingDogs] = useState(false);
+  const [fetchedEmailSets, setFetchedEmailSets] = useState<string[]>([]);
 
-  // Get unique event IDs from attendees
-  const eventIds = [...new Set(attendees.map(attendee => attendee.event_id).filter(Boolean))];
+  // Memoize the emails and event IDs to prevent unnecessary re-renders
+  const { emails, emailsKey, eventIds } = useMemo(() => {
+    // Get unique emails
+    const uniqueEmails = [...new Set(attendees.map((attendee) => attendee.email))];
+    // Create a stable key for comparison
+    const emailsString = uniqueEmails.sort().join(',');
+    // Get unique event IDs
+    const uniqueEventIds = [...new Set(attendees.map(attendee => attendee.event_id).filter(Boolean))];
+    
+    return {
+      emails: uniqueEmails,
+      emailsKey: emailsString,
+      eventIds: uniqueEventIds
+    };
+  }, [attendees]);
 
   // Fetch dogs for all attendees
   useEffect(() => {
+    // Skip if we've already fetched this exact set of emails
+    if (fetchedEmailSets.includes(emailsKey) || emails.length === 0) {
+      return;
+    }
+
     const fetchDogs = async () => {
       setIsLoadingDogs(true);
       try {
-        // Get all unique emails
-        const emails = attendees.map((attendee) => attendee.email);
-
         if (emails.length === 0) {
           setDogsMap({});
           return;
@@ -61,6 +77,9 @@ export function useDogsFetcher(attendees: Attendee[]): UseDogsFetcherResult {
         });
 
         setDogsMap(dogsByOwner);
+        
+        // Remember that we've fetched this set of emails
+        setFetchedEmailSets(prev => [...prev, emailsKey]);
       } catch (error) {
         console.error("Error fetching dogs:", error);
       } finally {
@@ -69,7 +88,7 @@ export function useDogsFetcher(attendees: Attendee[]): UseDogsFetcherResult {
     };
 
     fetchDogs();
-  }, [attendees, eventIds]);
+  }, [emails, emailsKey, eventIds, fetchedEmailSets]);
 
   return { dogsMap, isLoadingDogs };
 }
