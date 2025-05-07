@@ -47,7 +47,7 @@ const VaccineFileCell = ({ attendee, dogs }: VaccineFileCellProps) => {
     <div className="space-y-2">
       {attendeeFiles.length > 0 && (
         <div className="space-y-1">
-          <p className="text-xs font-medium text-gray-500">Human Records:</p>
+          <p className="text-xs font-medium text-gray-500">Dog Records:</p>
           {attendeeFiles.map((fileUrl, index) => (
             <TooltipProvider key={`attendee-${index}`}>
               <Tooltip>
@@ -63,7 +63,7 @@ const VaccineFileCell = ({ attendee, dogs }: VaccineFileCellProps) => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>View uploaded human vaccine record {attendeeFiles.length > 1 ? `#${index + 1}` : ''}</p>
+                  <p>View uploaded dog vaccine record {attendeeFiles.length > 1 ? `#${index + 1}` : ''}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
