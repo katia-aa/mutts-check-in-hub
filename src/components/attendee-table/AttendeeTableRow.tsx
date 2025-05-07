@@ -1,4 +1,3 @@
-
 import { Users, FileText, AlertTriangle } from "lucide-react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Attendee } from "@/types/attendee";
@@ -34,13 +33,13 @@ const AttendeeTableRow = ({ attendee, dogs }: AttendeeTableRowProps) => {
           </div>
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden md:table-cell">
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-gray-500" />
           <span>{attendee.is_guest ? "Guest" : "Ticket Holder"}</span>
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden md:table-cell">
         <div className="text-sm text-gray-600">
           {attendee.event_id || "N/A"}
         </div>

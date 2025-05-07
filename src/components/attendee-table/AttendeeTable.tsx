@@ -1,4 +1,3 @@
-
 import {
   Table,
   TableBody,
@@ -26,8 +25,8 @@ const AttendeeTable = ({ data }: AttendeeTableProps) => {
         <TableHeader>
           <TableRow>
             <TableHead>Name/Email</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Event ID</TableHead>
+            <TableHead className="hidden md:table-cell">Type</TableHead>
+            <TableHead className="hidden md:table-cell">Event ID</TableHead>
             <TableHead>Dogs</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Vaccine Files</TableHead>
