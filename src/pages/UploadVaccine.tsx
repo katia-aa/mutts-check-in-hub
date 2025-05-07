@@ -3,10 +3,9 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import CheckInLayout from "@/components/CheckInLayout";
 import FileUploadForm from "@/components/vaccine/FileUploadForm";
-import { useVaccineUpload } from "@/hooks/useVaccineUpload";
-import { useMultiFileUpload } from "@/hooks/useMultiFileUpload";
 import { useCustomToast } from "@/hooks/use-custom-toast";
 import { useDogManagement } from "@/hooks/useDogManagement";
+import { useMultiFileUpload } from "@/hooks/useMultiFileUpload";
 
 const UploadVaccine = () => {
   const [searchParams] = useSearchParams();
@@ -46,17 +45,7 @@ const UploadVaccine = () => {
     }, 1000);
   };
 
-  const {
-    file,
-    preview,
-    isUploading,
-    uploadProgress,
-    isConfiguringStorage,
-  } = useVaccineUpload({
-    email,
-    onUploadSuccess: handleUploadSuccess,
-  });
-
+  // Initialize the multi file upload hook
   const {
     selectedFiles,
     uploadingFileIndex,
@@ -74,6 +63,9 @@ const UploadVaccine = () => {
   const subtitle = hasMultipleDogs 
     ? "Upload your pups' vaccine records. Please upload one for each dog you're bringing." 
     : "Upload your pup's vaccine record and you're good to go";
+    
+  // Get dog count for clear messaging
+  const dogCount = dogs?.length || 0;
 
   return (
     <CheckInLayout
@@ -82,20 +74,30 @@ const UploadVaccine = () => {
       subtitle={subtitle}
     >
       <FileUploadForm
-        isUploading={isUploading}
-        isConfiguringStorage={isConfiguringStorage}
+        isUploading={uploadingFileIndex !== null}
+        isConfiguringStorage={false}
         formSubmitted={formSubmitted}
         selectedFiles={selectedFiles}
-        file={file}
-        preview={preview}
+        file={selectedFiles[0] || null}
+        preview={null}
         overallProgress={overallProgress}
         uploadingFileIndex={uploadingFileIndex}
         onFileChange={handleFileChange}
         onSubmit={handleSubmit}
         onRemoveFile={handleRemoveFile}
-        allowMultiple={hasMultipleDogs}
+        allowMultiple={true}
         isLoadingDogs={isLoadingDogs}
       />
+
+      {dogCount > 0 && !formSubmitted && !isLoadingDogs && (
+        <div className="mt-4 text-sm text-center text-gray-600">
+          {dogCount === 1 ? (
+            <p>You have 1 dog registered for this event</p>
+          ) : (
+            <p>You have {dogCount} dogs registered for this event</p>
+          )}
+        </div>
+      )}
     </CheckInLayout>
   );
 };

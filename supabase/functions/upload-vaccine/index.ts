@@ -77,12 +77,31 @@ Deno.serve(async (req) => {
 
     // Update the appropriate record based on whether it's a dog or human
     if (dogId) {
+      // First, fetch existing file paths and URLs
+      const { data: dogData, error: fetchError } = await supabaseAdmin
+        .from('dogs')
+        .select('vaccine_file_paths, vaccine_file_urls')
+        .eq('id', dogId)
+        .single();
+        
+      if (fetchError) {
+        console.error('Error fetching dog data:', fetchError);
+        throw new Error(`Failed to fetch dog data: ${fetchError.message}`);
+      }
+      
+      // Prepare arrays of file paths and URLs
+      const filePaths = dogData?.vaccine_file_paths || [];
+      const fileUrls = dogData?.vaccine_file_urls || [];
+      
+      // Update with new file
       const { error: updateError } = await supabaseAdmin
         .from('dogs')
         .update({
           vaccine_upload_status: true,
-          vaccine_file_path: filePath,
-          vaccine_file_url: publicUrl,
+          vaccine_file_path: filePath, // Keep for backward compatibility
+          vaccine_file_url: publicUrl, // Keep for backward compatibility
+          vaccine_file_paths: [...filePaths, filePath],
+          vaccine_file_urls: [...fileUrls, publicUrl],
           updated_at: new Date().toISOString(),
         })
         .eq('id', dogId);
@@ -92,13 +111,31 @@ Deno.serve(async (req) => {
         throw new Error(`Dog record update failed: ${updateError.message}`);
       }
     } else {
-      // Update the attendee record
+      // For attendee record, first fetch existing data
+      const { data: attendeeData, error: fetchError } = await supabaseAdmin
+        .from('attendees')
+        .select('vaccine_file_paths, vaccine_file_urls')
+        .eq('email', email)
+        .single();
+        
+      if (fetchError) {
+        console.error('Error fetching attendee data:', fetchError);
+        throw new Error(`Failed to fetch attendee data: ${fetchError.message}`);
+      }
+      
+      // Prepare arrays of file paths and URLs
+      const filePaths = attendeeData?.vaccine_file_paths || [];
+      const fileUrls = attendeeData?.vaccine_file_urls || [];
+      
+      // Update the attendee record with the new file
       const { error: updateError } = await supabaseAdmin
         .from('attendees')
         .update({
           vaccine_upload_status: true,
-          vaccine_file_path: filePath,
-          vaccine_file_url: publicUrl,
+          vaccine_file_path: filePath, // Keep for backward compatibility
+          vaccine_file_url: publicUrl, // Keep for backward compatibility
+          vaccine_file_paths: [...filePaths, filePath],
+          vaccine_file_urls: [...fileUrls, publicUrl],
           updated_at: new Date().toISOString(),
         })
         .eq('email', email);

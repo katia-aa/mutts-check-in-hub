@@ -23,7 +23,9 @@ export type Database = {
           signature_svg: string | null
           updated_at: string | null
           vaccine_file_path: string | null
+          vaccine_file_paths: string[] | null
           vaccine_file_url: string | null
+          vaccine_file_urls: string[] | null
           vaccine_upload_status: boolean | null
         }
         Insert: {
@@ -39,7 +41,9 @@ export type Database = {
           signature_svg?: string | null
           updated_at?: string | null
           vaccine_file_path?: string | null
+          vaccine_file_paths?: string[] | null
           vaccine_file_url?: string | null
+          vaccine_file_urls?: string[] | null
           vaccine_upload_status?: boolean | null
         }
         Update: {
@@ -55,7 +59,9 @@ export type Database = {
           signature_svg?: string | null
           updated_at?: string | null
           vaccine_file_path?: string | null
+          vaccine_file_paths?: string[] | null
           vaccine_file_url?: string | null
+          vaccine_file_urls?: string[] | null
           vaccine_upload_status?: boolean | null
         }
         Relationships: []
@@ -69,7 +75,9 @@ export type Database = {
           owner_email: string
           updated_at: string | null
           vaccine_file_path: string | null
+          vaccine_file_paths: string[] | null
           vaccine_file_url: string | null
+          vaccine_file_urls: string[] | null
           vaccine_upload_status: boolean | null
         }
         Insert: {
@@ -80,7 +88,9 @@ export type Database = {
           owner_email: string
           updated_at?: string | null
           vaccine_file_path?: string | null
+          vaccine_file_paths?: string[] | null
           vaccine_file_url?: string | null
+          vaccine_file_urls?: string[] | null
           vaccine_upload_status?: boolean | null
         }
         Update: {
@@ -91,7 +101,9 @@ export type Database = {
           owner_email?: string
           updated_at?: string | null
           vaccine_file_path?: string | null
+          vaccine_file_paths?: string[] | null
           vaccine_file_url?: string | null
+          vaccine_file_urls?: string[] | null
           vaccine_upload_status?: boolean | null
         }
         Relationships: [
@@ -111,6 +123,10 @@ export type Database = {
     Functions: {
       admin_setup_storage_policies: {
         Args: { bucket_name_param: string }
+        Returns: undefined
+      }
+      migrate_vaccine_files: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
     }

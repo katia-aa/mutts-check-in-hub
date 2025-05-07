@@ -1,6 +1,6 @@
 
-import { useState, useRef } from "react";
-import { ArrowRight, FileX } from "lucide-react";
+import { useRef } from "react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import UploadZone from "./UploadZone";
 import UploadProgress from "./UploadProgress";
@@ -48,12 +48,15 @@ const FileUploadForm = ({
     }
   };
 
+  const isDisabled = isUploading || isConfiguringStorage || formSubmitted || isLoadingDogs;
+  const noFilesSelected = selectedFiles.length === 0;
+
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="space-y-4">
         <UploadZone
           onFileChange={handleFileChange}
-          isDisabled={isUploading || isConfiguringStorage || formSubmitted || isLoadingDogs}
+          isDisabled={isDisabled}
           isConfiguringStorage={isConfiguringStorage}
           multiple={allowMultiple}
           fileInputRef={fileInputRef}
@@ -86,9 +89,15 @@ const FileUploadForm = ({
       <Button
         type="submit"
         className="w-full bg-mutts-secondary hover:bg-mutts-secondary/90 text-white rounded-xl h-12"
-        disabled={isUploading || isConfiguringStorage || selectedFiles.length === 0 || formSubmitted || isLoadingDogs}
+        disabled={isDisabled || noFilesSelected}
       >
-        {isLoadingDogs ? "Loading your pet info..." : (isUploading ? "Uploading..." : (isConfiguringStorage ? "Preparing..." : formSubmitted ? "Processing..." : "Complete Check-In"))}
+        {isLoadingDogs ? "Loading your pet info..." : (
+          isUploading ? `Uploading ${uploadingFileIndex !== null ? `(${uploadingFileIndex + 1}/${selectedFiles.length})` : '...'}` : (
+            isConfiguringStorage ? "Preparing..." : (
+              formSubmitted ? "Processing..." : "Complete Check-In"
+            )
+          )
+        )}
         {!isUploading && !isConfiguringStorage && !formSubmitted && !isLoadingDogs && <ArrowRight className="ml-2" />}
       </Button>
     </form>

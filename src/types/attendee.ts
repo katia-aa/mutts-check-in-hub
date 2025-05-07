@@ -10,6 +10,8 @@ export interface Attendee {
   signature_svg?: string | null;
   vaccine_file_path?: string | null;
   vaccine_file_url?: string | null;
+  vaccine_file_paths?: string[] | null;
+  vaccine_file_urls?: string[] | null;
   is_guest?: boolean | null;
   parent_ticket_email?: string | null;
   guest_name?: string | null;

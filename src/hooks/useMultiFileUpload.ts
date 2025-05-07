@@ -1,131 +1,106 @@
 
-import { useState, useEffect } from "react";
-import { useCustomToast } from "@/hooks/use-custom-toast";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { attemptEdgeFunctionUpload } from "@/utils/uploadHelpers";
-import { UploadResult, UploadError } from "@/types/vaccineUpload";
 
-interface UseMultiFileUploadProps {
+interface MultiFileUploadProps {
   email: string | null;
   onUploadSuccess: () => void;
 }
 
 export const useMultiFileUpload = ({
   email,
-  onUploadSuccess,
-}: UseMultiFileUploadProps) => {
+  onUploadSuccess
+}: MultiFileUploadProps) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploadingFileIndex, setUploadingFileIndex] = useState<number | null>(
-    null
-  );
+  const [uploadingFileIndex, setUploadingFileIndex] = useState<number | null>(null);
   const [overallProgress, setOverallProgress] = useState<number>(0);
   const [formSubmitted, setFormSubmitted] = useState(false);
-  const { toast } = useCustomToast();
-
-  const calculateOverallProgress = (
-    currentFileIndex: number,
-    currentProgress: number | null
-  ) => {
-    if (selectedFiles.length === 0) return 0;
-
-    const fileContribution = 100 / selectedFiles.length;
-    const completedFilesProgress = currentFileIndex * fileContribution;
-    const currentFileProgress =
-      (currentProgress || 0) * (fileContribution / 100);
-
-    return Math.min(
-      Math.round(completedFilesProgress + currentFileProgress),
-      100
-    );
-  };
-
-  // Update overall progress when individual file progress changes
-  useEffect(() => {
-    if (uploadingFileIndex !== null) {
-      setOverallProgress(calculateOverallProgress(uploadingFileIndex, null));
-    }
-  }, [uploadingFileIndex, selectedFiles.length]);
+  const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files);
+      const files = Array.from(e.target.files);
       
-      // Check file sizes and validate
-      const validFiles = newFiles.filter((file) => {
+      // Check file sizes
+      const validFiles = files.filter(file => {
         if (file.size > 10 * 1024 * 1024) {
-          toast.error({
+          toast({
+            variant: "destructive",
             title: "File too large",
-            description: `${file.name} is larger than 10MB. Please select a smaller file.`,
+            description: `${file.name} is larger than 10MB. Please select a smaller file.`
           });
           return false;
         }
         return true;
       });
       
-      // Add new files to existing selection
-      setSelectedFiles(prevFiles => [...prevFiles, ...validFiles]);
+      // Add new files to the existing selection
+      setSelectedFiles([...selectedFiles, ...validFiles]);
     }
   };
 
   const handleRemoveFile = (index: number) => {
-    setSelectedFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+    const newFiles = [...selectedFiles];
+    newFiles.splice(index, 1);
+    setSelectedFiles(newFiles);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (selectedFiles.length === 0 || formSubmitted) {
-      return; // Prevent submission if no files or already submitted
+    
+    if (selectedFiles.length === 0 || !email || formSubmitted) {
+      toast({
+        variant: "destructive",
+        title: "Unable to proceed",
+        description: selectedFiles.length === 0 
+          ? "Please select files to upload" 
+          : "Missing email or already uploading"
+      });
+      return;
     }
-
+    
     setFormSubmitted(true);
-    setUploadingFileIndex(0);
-
+    
     try {
-      // Upload all files using the edge function
+      // Upload each file sequentially
       for (let i = 0; i < selectedFiles.length; i++) {
         setUploadingFileIndex(i);
-        console.log(
-          `Uploading file ${i + 1} of ${selectedFiles.length}: ${
-            selectedFiles[i].name
-          }`
-        );
-
-        if (email) {
-          const result = await attemptEdgeFunctionUpload(
-            email,
-            selectedFiles[i]
-          );
-
-          if (!result.success) {
-            throw new Error(`Failed to upload ${selectedFiles[i].name}: ${result.success === false ? result.error : 'Unknown error'}`);
-          }
-
-          console.log(
-            `Successfully uploaded file ${i + 1}: ${selectedFiles[i].name}`
-          );
-        } else {
-          throw new Error("Email is required for uploading files");
+        setOverallProgress((i / selectedFiles.length) * 100);
+        
+        const file = selectedFiles[i];
+        console.log(`Uploading file ${i + 1}/${selectedFiles.length}: ${file.name}`);
+        
+        const result = await attemptEdgeFunctionUpload(email, file);
+        
+        if (!result.success) {
+          throw new Error(`Error uploading ${file.name}: ${result.error}`);
         }
+        
+        console.log(`Successfully uploaded ${file.name}`);
       }
-
-      console.log(`All ${selectedFiles.length} files uploaded successfully`);
-      onUploadSuccess();
-    } catch (error: any) {
-      console.error("Error uploading files:", error);
-      toast.error({
-        title: "Upload Error",
-        description:
-          error.message ||
-          "There was an error uploading your vaccination records. Please try again.",
+      
+      setOverallProgress(100);
+      
+      toast({
+        title: "Files uploaded successfully",
+        description: `All ${selectedFiles.length} files have been uploaded.`,
       });
-
-      // Reset submission state to allow for retries
-      setTimeout(() => {
-        if (document.location.pathname !== "/check-in-complete") {
-          setFormSubmitted(false);
-          setUploadingFileIndex(null);
-        }
-      }, 3000);
+      
+      // Call the success callback
+      onUploadSuccess();
+      
+    } catch (error: any) {
+      console.error("Error during file uploads:", error);
+      
+      toast({
+        variant: "destructive",
+        title: "Upload Error",
+        description: error.message || "There was an error uploading your files."
+      });
+      
+      // Reset submitted state to allow retries
+      setFormSubmitted(false);
     }
   };
 
@@ -134,7 +109,6 @@ export const useMultiFileUpload = ({
     uploadingFileIndex,
     overallProgress,
     formSubmitted,
-    setSelectedFiles,
     handleFileChange,
     handleSubmit,
     handleRemoveFile

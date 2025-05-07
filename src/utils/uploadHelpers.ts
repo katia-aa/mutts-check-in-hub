@@ -159,6 +159,7 @@ export const attemptEdgeFunctionUpload = async (
   }
 };
 
+// This function is no longer needed as updates are handled in the edge function
 export const updateAttendeeRecord = async (
   email: string,
   filePath: string
