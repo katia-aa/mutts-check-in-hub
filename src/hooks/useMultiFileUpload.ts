@@ -72,6 +72,7 @@ export const useMultiFileUpload = ({ email, onUploadSuccess }: UseMultiFileUploa
           const result = await attemptEdgeFunctionUpload(email, selectedFiles[i]);
           
           if (!result.success) {
+            // Fix: Check if the result is not successful before trying to access the error
             throw new Error(`Failed to upload ${selectedFiles[i].name}: ${result.error}`);
           }
           
