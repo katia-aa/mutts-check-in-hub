@@ -92,7 +92,6 @@ export const useMultiFileUpload = ({
           );
 
           if (!result.success) {
-            // Fixed: Correctly check for success property before accessing error
             throw new Error(`Failed to upload ${selectedFiles[i].name}: ${result.success === false ? result.error : 'Unknown error'}`);
           }
 

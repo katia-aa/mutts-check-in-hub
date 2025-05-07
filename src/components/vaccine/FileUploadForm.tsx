@@ -53,12 +53,10 @@ const FileUploadForm = ({
           </>
         )}
         
-        {selectedFiles.length > 0 && (
-          <FileList 
-            files={selectedFiles} 
-            uploadingFileIndex={uploadingFileIndex}
-          />
-        )}
+        <FileList 
+          files={selectedFiles} 
+          uploadingFileIndex={uploadingFileIndex}
+        />
         
         {preview && (
           <FilePreview file={file} previewUrl={preview} />
