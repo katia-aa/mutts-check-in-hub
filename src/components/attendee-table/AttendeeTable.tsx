@@ -18,7 +18,7 @@ interface AttendeeTableProps {
 }
 
 const AttendeeTable = ({ data }: AttendeeTableProps) => {
-  const { dogsMap } = useDogsFetcher(data);
+  const { dogsMap, isLoadingDogs } = useDogsFetcher(data);
 
   return (
     <div className="bg-white rounded-lg shadow">
@@ -35,13 +35,17 @@ const AttendeeTable = ({ data }: AttendeeTableProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((attendee) => (
-            <AttendeeTableRow
-              key={attendee.id}
-              attendee={attendee}
-              dogs={dogsMap[attendee.email] || []}
-            />
-          ))}
+          {isLoadingDogs ? (
+            <LoadingDogs />
+          ) : (
+            data.map((attendee) => (
+              <AttendeeTableRow
+                key={attendee.id}
+                attendee={attendee}
+                dogs={dogsMap[attendee.email] || []}
+              />
+            ))
+          )}
         </TableBody>
       </Table>
     </div>
