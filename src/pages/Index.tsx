@@ -15,7 +15,7 @@ const Index = () => {
         <div className="p-6 bg-white rounded-xl border border-mutts-primary/20 shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center gap-4 mb-4">
             <h3 className="text-xl font-bold text-mutts-primary">
-              I bought my own ticket 🐾
+              🐾 I bought my own ticket
             </h3>
           </div>
           <Button
@@ -30,7 +30,7 @@ const Index = () => {
         <div className="p-6 bg-white rounded-xl border border-mutts-secondary/20 shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center gap-4 mb-4">
             <h3 className="text-xl font-bold text-mutts-secondary">
-              A friend bought my ticket 🎉
+              🎉 A friend bought my ticket
             </h3>
           </div>
           <Button
