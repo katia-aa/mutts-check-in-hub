@@ -56,9 +56,8 @@ export function useDogsFetcher(attendees: Attendee[]): UseDogsFetcherResult {
           .in("owner_email", emails);
           
         // Add event_id filter if available
-        if (eventIdFilters) {
-          query = query.or(eventIdFilters);
-        }
+        // NOTE: We're removing the OR condition here that was causing the duplication
+        // Only filter by owner_email which is sufficient to get the right dogs
 
         const { data: dogsData, error } = await query;
 
