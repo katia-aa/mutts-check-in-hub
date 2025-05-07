@@ -39,6 +39,18 @@ export const processHumanAttendee = async (
   return false;
 };
 
+// Generate a default name for dogs when no name is provided
+export const generateDefaultDogName = async (ownerEmail: string): Promise<string> => {
+  // Get existing dogs count for this owner to determine the next number
+  const { data: existingDogs } = await supabase
+    .from("dogs")
+    .select("id")
+    .eq("owner_email", ownerEmail);
+    
+  const dogCount = existingDogs?.length || 0;
+  return `Dog ${dogCount + 1}`;
+};
+
 // Process dogs for an owner
 export const processDogs = async (
   ownerEmail: string, 
@@ -48,23 +60,18 @@ export const processDogs = async (
 ) => {
   console.log(`Processing ${dogs.length} dogs for owner ${ownerEmail}`);
   
-  for (const dogName of dogs) {
-    console.log(`Adding dog: ${dogName} for owner ${ownerEmail}`);
+  for (let i = 0; i < dogs.length; i++) {
+    let dogName = dogs[i];
     
-    // First check if this exact dog already exists
-    const { data: existingDogs } = await supabase
-      .from("dogs")
-      .select("id, name")
-      .eq("owner_email", ownerEmail)
-      .eq("name", dogName);
-      
-    // Skip if the exact dog already exists
-    if (existingDogs && existingDogs.length > 0) {
-      console.log(`Dog ${dogName} already exists for owner ${ownerEmail}, skipping`);
-      continue;
+    // If dog has no name or empty name, generate a default name
+    if (!dogName || dogName.trim() === '') {
+      dogName = await generateDefaultDogName(ownerEmail);
     }
     
-    // Insert the dog record
+    console.log(`Adding dog: ${dogName} for owner ${ownerEmail}`);
+    
+    // Insert the dog record without checking for duplicates
+    // This allows multiple dogs per owner (even with same name)
     const { error: dogError } = await supabase
       .from("dogs")
       .insert({
@@ -119,7 +126,7 @@ export const processEventbriteAttendees = async (
     
     if (isDog) {
       const ownerEmail = attendee.profile.email;
-      const dogName = attendee.profile.first_name;
+      const dogName = attendee.profile.first_name || ''; // Allow empty dog names, we'll generate them later
       
       // Track this dog registration
       if (!dogRegistrations[ownerEmail]) {
@@ -129,10 +136,8 @@ export const processEventbriteAttendees = async (
         };
       }
       
-      // Prevent duplicate dog names (just in case)
-      if (!dogRegistrations[ownerEmail].dogs.includes(dogName)) {
-        dogRegistrations[ownerEmail].dogs.push(dogName);
-      }
+      // Add this dog to the registration list (even if name is empty)
+      dogRegistrations[ownerEmail].dogs.push(dogName);
     } else {
       // Process as human attendee
       const shouldStop = await processHumanAttendee(attendee, setRlsError, setErrorMessage);
