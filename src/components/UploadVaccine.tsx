@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { ArrowRight, Plus } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import CheckInLayout from "@/components/CheckInLayout";
@@ -65,11 +65,6 @@ const UploadVaccine = () => {
     }, 3000);
   };
 
-  // Navigate to the multi-dog vaccine upload page
-  const handleManageMultipleDogs = () => {
-    navigate(`/dog-vaccine-upload?email=${encodeURIComponent(email || '')}`);
-  };
-
   // Cleanup function to reset state if component unmounts during submission
   useEffect(() => {
     return () => {
@@ -94,19 +89,6 @@ const UploadVaccine = () => {
           <UploadProgress progress={uploadProgress} />
           
           <FilePreview file={file} previewUrl={preview} />
-          
-          {/* Add link for users with multiple dogs */}
-          <div className="text-center">
-            <Button
-              type="button"
-              variant="link"
-              onClick={handleManageMultipleDogs}
-              className="text-mutts-primary hover:text-mutts-primary/80 p-0"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Bringing multiple dogs? Manage them here
-            </Button>
-          </div>
         </div>
 
         <Button
