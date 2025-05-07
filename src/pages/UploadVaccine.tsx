@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import CheckInLayout from "@/components/CheckInLayout";
@@ -87,6 +86,7 @@ const UploadVaccine = () => {
         onRemoveFile={handleRemoveFile}
         allowMultiple={true}
         isLoadingDogs={isLoadingDogs}
+        dogCount={dogCount}
       />
 
       {dogCount > 0 && !formSubmitted && !isLoadingDogs && (
