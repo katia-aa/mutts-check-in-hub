@@ -85,6 +85,10 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
   const hasDogs = (email: string) => {
     return dogsMap[email] && dogsMap[email].length > 0;
   };
+  
+  const getDogCount = (email: string) => {
+    return dogsMap[email]?.length || 0;
+  };
 
   return (
     <div className="bg-white rounded-lg shadow">
@@ -93,6 +97,7 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
           <TableRow>
             <TableHead>Name/Email</TableHead>
             <TableHead>Type</TableHead>
+            <TableHead>Dogs</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Details</TableHead>
           </TableRow>
@@ -131,6 +136,16 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
                   </div>
                 </TableCell>
                 <TableCell>
+                  {hasDogs(attendee.email) ? (
+                    <div className="flex items-center gap-2">
+                      <DogIcon className="w-4 h-4 text-gray-500" />
+                      <span className="font-medium">{getDogCount(attendee.email)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">None</span>
+                  )}
+                </TableCell>
+                <TableCell>
                   <div className="flex items-center gap-2">
                     {getStatusIcon(attendee)}
                   </div>
@@ -160,6 +175,9 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
                     </div>
                   </TableCell>
                   <TableCell>
+                    {/* Empty cell to maintain alignment */}
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-2">
                       {getStatusIcon(dog)}
                     </div>
@@ -174,7 +192,7 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
           
           {isLoadingDogs && (
             <TableRow>
-              <TableCell colSpan={4} className="text-center py-4">
+              <TableCell colSpan={5} className="text-center py-4">
                 <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
                 <div className="mt-2 text-sm text-gray-500">Loading pets...</div>
               </TableCell>
@@ -183,7 +201,7 @@ const AttendeeTable = ({ data, onDataUpdate }: AttendeeTableProps) => {
           
           {Object.keys(dogsMap).length === 0 && !isLoadingDogs && data.length > 0 && (
             <TableRow>
-              <TableCell colSpan={4} className="text-center py-4 text-gray-500">
+              <TableCell colSpan={5} className="text-center py-4 text-gray-500">
                 No pets registered for these attendees
               </TableCell>
             </TableRow>
