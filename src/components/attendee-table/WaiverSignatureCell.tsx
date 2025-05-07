@@ -21,16 +21,36 @@ const WaiverSignatureCell = ({ signature }: WaiverSignatureCellProps) => {
     );
   }
 
+  // Handle base64 SVG data
+  const isSvgData = signature.startsWith('data:image/svg+xml;base64,') || 
+                    signature.startsWith('<svg');
+
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger>
           <div className="flex flex-col items-center gap-2">
             <div className="bg-gray-50 border rounded p-1">
-              <div 
-                dangerouslySetInnerHTML={{ __html: signature }} 
-                className="max-w-[120px] max-h-[60px] min-h-[40px]" 
-              />
+              {isSvgData ? (
+                <div className="max-w-[120px] max-h-[60px] min-h-[40px]">
+                  {signature.startsWith('data:image/svg+xml;base64,') ? (
+                    <img 
+                      src={signature} 
+                      alt="Signed waiver" 
+                      className="max-h-[60px]" 
+                    />
+                  ) : (
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: signature }} 
+                      className="max-w-[120px] max-h-[60px]" 
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="max-w-[120px] max-h-[60px] min-h-[40px] flex items-center justify-center text-xs text-gray-500">
+                  Signature available
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-1 text-green-600 text-xs">
               <Check className="w-4 h-4" />

@@ -38,11 +38,11 @@ const VaccineFileCell = ({ attendee, dogs }: VaccineFileCellProps) => {
                 onClick={() => window.open(attendee.vaccine_file_url!, '_blank')}
               >
                 <FileText className="w-4 h-4 mr-2" />
-                Human Vaccine
+                Dog Vaccine
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>View uploaded vaccine record</p>
+              <p>View uploaded dog vaccine record</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

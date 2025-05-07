@@ -52,6 +52,7 @@ const AttendeeTableRow = ({ attendee, dogs }: AttendeeTableRowProps) => {
         <StatusIndicator 
           hasVaccineRecord={!!attendee.vaccine_file_path} 
           hasWaiverSignature={!!attendee.signature_svg}
+          dogCount={dogs.length}
         />
       </TableCell>
       <TableCell>
