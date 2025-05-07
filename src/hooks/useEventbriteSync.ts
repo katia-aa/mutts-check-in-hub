@@ -74,7 +74,7 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
           const ownerEmail = attendee.profile.email;
           console.log(`Processing dog with owner email: ${ownerEmail}, name: ${attendee.profile.first_name}`);
           
-          // Insert dog record
+          // Insert dog record using on conflict with the unique constraint
           const { error: dogError } = await supabase.from("dogs").upsert(
             {
               name: attendee.profile.first_name,
@@ -83,6 +83,7 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
             },
             {
               onConflict: "owner_email,name",
+              ignoreDuplicates: false
             }
           );
 
