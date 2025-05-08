@@ -1,4 +1,3 @@
-
 import { useAttendeeSync } from "@/hooks/useAttendeeSync";
 import { useEffect } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
@@ -12,17 +11,17 @@ const AdminDashboard = () => {
     errorMessage,
     connectionError,
     rlsError,
-    syncEventbriteAttendees,
+    syncEventbriteOrders,
     fetchAttendees,
   } = useAttendeeSync();
 
   useEffect(() => {
-    syncEventbriteAttendees();
+    syncEventbriteOrders();
   }, []);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <AdminHeader onSync={syncEventbriteAttendees} isLoading={isLoading} />
+      <AdminHeader onSync={syncEventbriteOrders} isLoading={isLoading} />
 
       <ErrorDisplay
         errorMessage={errorMessage}

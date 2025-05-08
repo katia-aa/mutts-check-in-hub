@@ -1,4 +1,3 @@
-
 // Barrel file that re-exports all functionality from the eventbrite modules
 
 // Export error handling utilities
@@ -19,7 +18,10 @@ export {
 } from './eventbrite/dog-processor';
 
 // Export the fetch function
-export { fetchEventbriteAttendees } from './eventbrite/fetch-attendees';
+export { fetchEventbriteOrders } from './eventbrite/fetch-orders';
 
 // Export the main processor
-export { processEventbriteAttendees } from './eventbrite/sync-processor';
+export { processEventbriteOrders } from './eventbrite/sync-processor';
+
+// Export order processing functions
+export { processEventbriteOrder } from './eventbrite/order-processor';

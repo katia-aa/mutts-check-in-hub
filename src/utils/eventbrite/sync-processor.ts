@@ -1,53 +1,57 @@
-import { processHumanAttendee } from "./attendee-processor";
+import { processEventbriteOrder } from "./order-processor";
 import { processDogs } from "./dog-processor";
 
-// Process all attendees from Eventbrite
-export const processEventbriteAttendees = async (
-  eventbriteAttendees: any[],
+// Process all orders from Eventbrite
+export const processEventbriteOrders = async (
+  eventbriteOrders: any[],
   eventId: string,
   setRlsError: (value: boolean) => void,
   setErrorMessage: (value: string | null) => void
 ) => {
   // Create a map to track dog registration data per owner
-  const dogRegistrations: Record<string, { owner: string; dogs: string[] }> =
-    {};
+  const dogRegistrations: Record<string, { owner: string; dogs: string[] }> = {};
 
-  // First pass: identify all dogs and their owners
-  for (const attendee of eventbriteAttendees) {
-    if (!attendee.profile || !attendee.profile.email) {
-      console.warn("Skipping attendee without email:", attendee);
+  // First pass: process orders and identify all dogs and their owners
+  for (const order of eventbriteOrders) {
+    // Skip cancelled orders
+    if (order.status === 'cancelled') {
       continue;
     }
 
-    const isDog = attendee.ticket_class_name === "Mutts Access Pass (For Dogs)";
+    // Process the order and its attendees
+    const shouldStop = await processEventbriteOrder(
+      order,
+      eventId,
+      setRlsError,
+      setErrorMessage
+    );
+    if (shouldStop) return false;
 
-    if (isDog) {
-      const ownerEmail = attendee.profile.email;
-      const dogName = attendee.profile.first_name || ""; // Allow empty dog names, we'll generate them later
-
-      // Track this dog registration
-      if (!dogRegistrations[ownerEmail]) {
-        dogRegistrations[ownerEmail] = {
-          owner: ownerEmail,
-          dogs: [],
-        };
+    // Track dogs from this order
+    for (const attendee of order.attendees || []) {
+      if (!attendee.profile || !attendee.profile.email) {
+        continue;
       }
 
-      // Add this dog to the registration list (even if name is empty)
-      dogRegistrations[ownerEmail].dogs.push(dogName);
-    } else {
-      // Process as human attendee
-      const shouldStop = await processHumanAttendee(
-        attendee,
-        eventId,
-        setRlsError,
-        setErrorMessage
-      );
-      if (shouldStop) return false;
+      const isDog = attendee.ticket_class_name === "Mutts Access Pass (For Dogs)";
+
+      if (isDog) {
+        const ownerEmail = attendee.profile.email;
+        const dogName = attendee.profile.first_name || "";
+
+        if (!dogRegistrations[ownerEmail]) {
+          dogRegistrations[ownerEmail] = {
+            owner: ownerEmail,
+            dogs: [],
+          };
+        }
+
+        dogRegistrations[ownerEmail].dogs.push(dogName);
+      }
     }
   }
 
-  // Process and save all dogs in a separate pass to ensure all human records exist first
+  // Process and save all dogs in a separate pass
   for (const ownerEmail in dogRegistrations) {
     const { dogs } = dogRegistrations[ownerEmail];
     const shouldStop = await processDogs(

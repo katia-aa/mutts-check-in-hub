@@ -1,4 +1,3 @@
-
 import { useAttendeeFetch } from "./useAttendeeFetch";
 import { useEventbriteSync } from "./useEventbriteSync";
 
@@ -9,7 +8,7 @@ export const useAttendeeSync = () => {
     errorMessage,
     connectionError,
     rlsError,
-    syncEventbriteAttendees: syncEventbrite,
+    syncEventbriteOrders,
   } = useEventbriteSync(fetchAttendees);
 
   return {
@@ -18,7 +17,7 @@ export const useAttendeeSync = () => {
     errorMessage,
     connectionError,
     rlsError,
-    syncEventbriteAttendees: syncEventbrite,
+    syncEventbriteOrders,
     fetchAttendees,
   };
 };

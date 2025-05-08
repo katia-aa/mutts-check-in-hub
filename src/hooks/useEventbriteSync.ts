@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { 
-  fetchEventbriteAttendees, 
-  processEventbriteAttendees, 
+  fetchEventbriteOrders, 
+  processEventbriteOrders, 
   handleSyncError,
   showSuccessToast
 } from "@/utils/eventbrite-sync";
@@ -13,14 +12,14 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
   const [connectionError, setConnectionError] = useState(false);
   const [rlsError, setRlsError] = useState(false);
 
-  const syncEventbriteAttendees = async () => {
+  const syncEventbriteOrders = async () => {
     setIsLoading(true);
     setErrorMessage(null);
     setConnectionError(false);
     setRlsError(false);
 
     try {
-      const response: any = await fetchEventbriteAttendees();
+      const response: any = await fetchEventbriteOrders();
 
       if (response.error) {
         console.error("Supabase function error:", response.error);
@@ -32,7 +31,7 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
         throw new Error(response.data.error);
       }
 
-      const eventbriteAttendees = response.data?.attendees || [];
+      const eventbriteOrders = response.data?.orders || [];
       const eventId = response.data?.event_id;
 
       if (!eventId) {
@@ -40,8 +39,8 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
         throw new Error("Missing event ID from Eventbrite response");
       }
 
-      if (eventbriteAttendees.length === 0) {
-        console.warn("No attendees found in Eventbrite response");
+      if (eventbriteOrders.length === 0) {
+        console.warn("No orders found in Eventbrite response");
       }
 
       if (response.data?.rlsError) {
@@ -54,9 +53,9 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
         return;
       }
 
-      // Process all attendees from Eventbrite with event ID
-      const success = await processEventbriteAttendees(
-        eventbriteAttendees,
+      // Process all orders from Eventbrite with event ID
+      const success = await processEventbriteOrders(
+        eventbriteOrders,
         eventId,
         setRlsError,
         setErrorMessage
@@ -80,6 +79,6 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
     errorMessage,
     connectionError,
     rlsError,
-    syncEventbriteAttendees,
+    syncEventbriteOrders,
   };
 };
