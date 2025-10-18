@@ -1,0 +1,10 @@
+
+dist
+node_modules
+coverage
+public
+*.svg
+README.md
+.github
+CNAME
+bun.lockb
