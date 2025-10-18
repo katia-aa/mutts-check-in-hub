@@ -10,8 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 const SignaturePad = () => {
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email");
-  const isGuest = searchParams.get("isGuest") === "true";
-  const noDog = searchParams.get("noDog") === "true";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePadLib | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -82,16 +80,11 @@ const SignaturePad = () => {
       // Show success toast
       toast({
         title: "Great job!",
-        description: "Your signature has been saved. Moving to the next step!",
+        description: "Your signature has been saved. Check-in complete!",
       });
 
-      // For guests or users with no dog, redirect to completion page
-      if (isGuest || noDog) {
-        navigate(`/check-in-complete?isGuest=${isGuest}&noDog=${noDog}`);
-      } else {
-        // For regular users with dogs, continue to vaccine upload
-        navigate(`/upload-vaccine?email=${email}`);
-      }
+      // Navigate to completion page
+      navigate('/check-in-complete');
     } catch (error) {
       console.error("Error saving signature:", error);
       toast({
@@ -129,7 +122,7 @@ const SignaturePad = () => {
           className="w-3/5 bg-mutts-primary hover:bg-mutts-primary/90 rounded-xl"
           disabled={isLoading}
         >
-          {isLoading ? "Saving..." : isGuest ? "Complete Check-in" : "Next Step"}
+          {isLoading ? "Saving..." : "Complete Check-in"}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>

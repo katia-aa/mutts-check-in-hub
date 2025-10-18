@@ -20,10 +20,12 @@ const AdminContent = ({
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredData = attendees.filter(
-    (attendee) =>
-      attendee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (attendee.name &&
-        attendee.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    (attendee) => {
+      const fullName = `${attendee.first_name} ${attendee.last_name}`.toLowerCase();
+      const search = searchTerm.toLowerCase();
+      return attendee.email.toLowerCase().includes(search) ||
+        fullName.includes(search);
+    }
   );
 
   return (

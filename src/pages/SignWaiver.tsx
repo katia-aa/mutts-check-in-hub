@@ -6,17 +6,11 @@ import CheckInLayout from "@/components/CheckInLayout";
 const SignWaiver = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const isGuest = searchParams.get("isGuest") === "true";
-  const noDog = searchParams.get("noDog") === "true";
-
-  // Determine if we're using the 2-step or 3-step flow
-  const isShortFlow = isGuest || noDog;
-  const totalSteps = isShortFlow ? 2 : 3;
 
   // Check for required parameters
   useEffect(() => {
     const email = searchParams.get("email");
-    if (!email && !isGuest) {
+    if (!email) {
       navigate("/");
     }
   }, [searchParams, navigate]);
@@ -26,7 +20,7 @@ const SignWaiver = () => {
       step={2}
       title="✍️"
       subtitle="Just a quick paw-thentication"
-      totalSteps={totalSteps}
+      totalSteps={2}
     >
       <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm overflow-y-auto max-h-[60vh] text-sm">
         <h1 className="text-xl font-bold mb-4">

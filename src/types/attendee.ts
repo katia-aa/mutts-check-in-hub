@@ -2,17 +2,13 @@
 export interface Attendee {
   id: string;
   email: string;
-  name: string | null;
-  vaccine_upload_status: boolean;
-  eventbrite_id?: string;
-  event_id?: string | null;
-  submissionTime?: string;
-  signature_svg?: string | null;
-  vaccine_file_path?: string | null;
-  vaccine_file_url?: string | null;
-  vaccine_file_paths?: string[] | null;
-  vaccine_file_urls?: string[] | null;
-  is_guest?: boolean | null;
-  parent_ticket_email?: string | null;
-  guest_name?: string | null;
+  first_name: string;
+  last_name: string;
+  has_dog: boolean;
+  da2pp_vaccine: boolean;
+  rabies_vaccine: boolean;
+  bordetella_vaccine: boolean;
+  signature_svg: string | null;
+  created_at: string;
+  updated_at: string;
 }
