@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Fetch orders from Eventbrite via edge function with timeout
 export const fetchEventbriteOrders = async () => {
-  const responsePromise = supabase.functions.invoke("smooth-processor");
+  const responsePromise = supabase.functions.invoke("fetch-eventbrite-orders");
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(
       () =>
