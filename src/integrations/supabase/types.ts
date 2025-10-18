@@ -14,7 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attendees: {
+        Row: {
+          created_at: string
+          email: string
+          event_id: string | null
+          eventbrite_id: string | null
+          guest_name: string | null
+          id: string
+          is_guest: boolean | null
+          name: string | null
+          parent_ticket_email: string | null
+          signature_svg: string | null
+          updated_at: string
+          vaccine_file_path: string | null
+          vaccine_file_paths: string[] | null
+          vaccine_file_url: string | null
+          vaccine_file_urls: string[] | null
+          vaccine_upload_status: boolean
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          event_id?: string | null
+          eventbrite_id?: string | null
+          guest_name?: string | null
+          id?: string
+          is_guest?: boolean | null
+          name?: string | null
+          parent_ticket_email?: string | null
+          signature_svg?: string | null
+          updated_at?: string
+          vaccine_file_path?: string | null
+          vaccine_file_paths?: string[] | null
+          vaccine_file_url?: string | null
+          vaccine_file_urls?: string[] | null
+          vaccine_upload_status?: boolean
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          event_id?: string | null
+          eventbrite_id?: string | null
+          guest_name?: string | null
+          id?: string
+          is_guest?: boolean | null
+          name?: string | null
+          parent_ticket_email?: string | null
+          signature_svg?: string | null
+          updated_at?: string
+          vaccine_file_path?: string | null
+          vaccine_file_paths?: string[] | null
+          vaccine_file_url?: string | null
+          vaccine_file_urls?: string[] | null
+          vaccine_upload_status?: boolean
+        }
+        Relationships: []
+      }
+      dogs: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          id: string
+          name: string
+          owner_email: string
+          updated_at: string
+          vaccine_file_path: string | null
+          vaccine_file_paths: string[] | null
+          vaccine_file_url: string | null
+          vaccine_file_urls: string[] | null
+          vaccine_upload_status: boolean
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          name: string
+          owner_email: string
+          updated_at?: string
+          vaccine_file_path?: string | null
+          vaccine_file_paths?: string[] | null
+          vaccine_file_url?: string | null
+          vaccine_file_urls?: string[] | null
+          vaccine_upload_status?: boolean
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          name?: string
+          owner_email?: string
+          updated_at?: string
+          vaccine_file_path?: string | null
+          vaccine_file_paths?: string[] | null
+          vaccine_file_url?: string | null
+          vaccine_file_urls?: string[] | null
+          vaccine_upload_status?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
