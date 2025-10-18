@@ -2,9 +2,10 @@
 import { useRef, useEffect, useState } from "react";
 import SignaturePadLib from "signature_pad";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowRight, RefreshCw } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { useCustomToast } from "@/hooks/use-custom-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const SignaturePad = () => {
@@ -13,8 +14,9 @@ const SignaturePad = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePadLib | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [furnitureAcknowledgment, setFurnitureAcknowledgment] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast } = useCustomToast();
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -49,10 +51,17 @@ const SignaturePad = () => {
 
   const handleNext = async () => {
     if (signaturePadRef.current?.isEmpty()) {
-      toast({
-        variant: "destructive",
+      toast.error({
         title: "Paw print needed!",
         description: "Please sign the waiver before proceeding",
+      });
+      return;
+    }
+
+    if (!furnitureAcknowledgment) {
+      toast.error({
+        title: "Acknowledgment Required",
+        description: "Please confirm your agreement to the furniture care responsibility",
       });
       return;
     }
@@ -78,7 +87,7 @@ const SignaturePad = () => {
       if (error) throw error;
 
       // Show success toast
-      toast({
+      toast.encouragement({
         title: "Great job!",
         description: "Your signature has been saved. Check-in complete!",
       });
@@ -87,8 +96,7 @@ const SignaturePad = () => {
       navigate('/check-in-complete');
     } catch (error) {
       console.error("Error saving signature:", error);
-      toast({
-        variant: "destructive",
+      toast.error({
         title: "Oops!",
         description:
           "There was an error saving your signature. Please try again.",
@@ -100,6 +108,21 @@ const SignaturePad = () => {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-start space-x-3 p-4 bg-white/90 border border-mutts-primary/30 rounded-xl">
+        <Checkbox
+          id="furnitureAcknowledgment"
+          checked={furnitureAcknowledgment}
+          onCheckedChange={(checked) => setFurnitureAcknowledgment(checked === true)}
+          className="border-mutts-primary data-[state=checked]:bg-mutts-primary mt-0.5"
+        />
+        <label
+          htmlFor="furnitureAcknowledgment"
+          className="text-sm leading-tight cursor-pointer"
+        >
+          I acknowledge my responsibility to exercise care with all venue furniture and property, and I agree to assume financial liability for any damages caused by myself or my dog during the event.
+        </label>
+      </div>
+      
       <div className="border border-mutts-primary/30 rounded-xl overflow-hidden bg-white/90 shadow-sm">
         <canvas
           ref={canvasRef}
