@@ -22,7 +22,7 @@ const SignWaiver = () => {
       subtitle="Just a quick paw-thentication"
       totalSteps={2}
     >
-      <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm overflow-y-auto max-h-[60vh] text-sm">
+      <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm overflow-y-scroll max-h-[50vh] text-sm border border-gray-200">
         <h1 className="text-xl font-bold mb-4">
           RELEASE OF LIABILITY, WAIVER OF CLAIMS, ASSUMPTION OF RISKS, AND
           INDEMNITY AGREEMENT
