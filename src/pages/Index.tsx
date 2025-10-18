@@ -6,7 +6,7 @@ const Index = () => {
   return (
     <CheckInLayout
       step={1}
-      title="Howdy!"
+      title="💾 Boot Up!"
       subtitle="Let's get you checked in 🐾"
       totalSteps={2}
     >
