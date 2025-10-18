@@ -3,15 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, Dog } from "lucide-react";
+import { Mail } from "lucide-react";
 import { useCustomToast } from "@/hooks/use-custom-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-interface CheckInFormProps {
-  isGuest: boolean;
-}
-
-const CheckInForm = ({ isGuest }: CheckInFormProps) => {
+const CheckInForm = () => {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false); 
@@ -22,53 +20,67 @@ const CheckInForm = ({ isGuest }: CheckInFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isSubmitting) return; // Prevent double submission
+    if (isSubmitting) return;
     
     setIsLoading(true);
     setIsSubmitting(true);
     
     try {
-      // Regular ticket holder flow
-      const { data, error } = await supabase
+      const fullName = `${firstName} ${lastName}`.trim();
+      const normalizedEmail = email.toLowerCase().trim();
+
+      // Check if attendee already exists
+      const { data: existingAttendee } = await supabase
         .from('attendees')
         .select('*')
-        .eq('email', email.toLowerCase())
-        .single();
+        .eq('email', normalizedEmail)
+        .maybeSingle();
 
-      if (error || !data) {
-        toast.error({
-          title: "Hmm, that doesn't look right",
-          description: "Please use the email from your Eventbrite registration.",
-        });
-        // Reset submit state to allow retry
-        setTimeout(() => setIsSubmitting(false), 1000);
-        return;
+      let attendeeData;
+
+      if (existingAttendee) {
+        // Update existing attendee
+        const { data: updatedAttendee, error: updateError } = await supabase
+          .from('attendees')
+          .update({
+            name: fullName,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('email', normalizedEmail)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+        attendeeData = updatedAttendee;
+      } else {
+        // Create new attendee
+        const { data: newAttendee, error: insertError } = await supabase
+          .from('attendees')
+          .insert({
+            email: normalizedEmail,
+            name: fullName,
+            is_guest: false,
+            vaccine_upload_status: false,
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        attendeeData = newAttendee;
       }
-      
-      // Update the attendee to mark if they have a dog or not
-      await supabase
-        .from('attendees')
-        .update({ 
-          updated_at: new Date().toISOString(),
-          // We're not using this flag anymore as we'll control the flow directly
-          vaccine_upload_status: false
-        })
-        .eq('email', email.toLowerCase());
 
       toast.encouragement({
-        title: "Tail-wagging news!",
-        description: "We found your registration. Let's continue!",
+        title: "Welcome!",
+        description: "Let's continue with your check-in.",
       });
       
-      // Pass the noDog parameter to the waiver screen
-      navigate(`/sign-waiver?email=${encodeURIComponent(email)}&noDog=${noDog}`);
+      navigate(`/sign-waiver?email=${encodeURIComponent(normalizedEmail)}&noDog=${noDog}`);
     } catch (error) {
       console.error('Error:', error);
       toast.error({
         title: "Error",
         description: "An error occurred. Please try again.",
       });
-      // Reset submit state to allow retry
       setTimeout(() => setIsSubmitting(false), 1000);
     } finally {
       setIsLoading(false);
@@ -77,15 +89,37 @@ const CheckInForm = ({ isGuest }: CheckInFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-6">
-      <Input
-        type="email"
-        placeholder="Enter your email address"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="h-12 px-4 bg-white/90 border-mutts-primary/30 focus-visible:border-mutts-primary focus-visible:ring-mutts-primary rounded-xl"
-        required
-        disabled={isLoading || isSubmitting}
-      />
+      <div className="space-y-4">
+        <Input
+          type="text"
+          placeholder="First Name"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          className="h-12 px-4 bg-white/90 border-mutts-primary/30 focus-visible:border-mutts-primary focus-visible:ring-mutts-primary rounded-xl"
+          required
+          disabled={isLoading || isSubmitting}
+        />
+
+        <Input
+          type="text"
+          placeholder="Last Name"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          className="h-12 px-4 bg-white/90 border-mutts-primary/30 focus-visible:border-mutts-primary focus-visible:ring-mutts-primary rounded-xl"
+          required
+          disabled={isLoading || isSubmitting}
+        />
+
+        <Input
+          type="email"
+          placeholder="Email Address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="h-12 px-4 bg-white/90 border-mutts-primary/30 focus-visible:border-mutts-primary focus-visible:ring-mutts-primary rounded-xl"
+          required
+          disabled={isLoading || isSubmitting}
+        />
+      </div>
 
       <div className="flex items-center space-x-2">
         <Checkbox 
@@ -108,7 +142,7 @@ const CheckInForm = ({ isGuest }: CheckInFormProps) => {
         disabled={isLoading || isSubmitting}
       >
         <Mail className="w-5 h-5 mr-2" />
-        {isLoading ? "Checking..." : "Unleash the festival!"}
+        {isLoading ? "Processing..." : "Continue to Waiver"}
       </Button>
     </form>
   );
