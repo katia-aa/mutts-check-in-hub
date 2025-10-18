@@ -67,7 +67,11 @@ export const useEventbriteSync = (onSyncComplete: () => Promise<void>) => {
 
       await onSyncComplete();
     } catch (error: any) {
-      handleSyncError(error, setConnectionError, setErrorMessage, setRlsError);
+      // Only show error if user explicitly clicked sync button
+      // Don't show edge function errors on initial load since we're not using Eventbrite sync
+      if (error.message && !error.message.includes("Function error")) {
+        handleSyncError(error, setConnectionError, setErrorMessage, setRlsError);
+      }
       await onSyncComplete();
     } finally {
       setIsLoading(false);
