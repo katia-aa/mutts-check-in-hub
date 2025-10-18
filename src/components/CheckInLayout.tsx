@@ -4,11 +4,11 @@ import CheckInProgress from "@/components/CheckInProgress";
 
 interface CheckInLayoutProps {
   children: ReactNode;
-  step?: 0 | 1 | 2 | 3;
+  step?: 0 | 1 | 2;
   title: string;
   subtitle?: string;
   showProgress?: boolean;
-  totalSteps?: 2 | 3; // Allow for either 2 or 3 total steps
+  totalSteps?: 2; // Always 2 steps
 }
 
 const CheckInLayout = ({
@@ -17,7 +17,7 @@ const CheckInLayout = ({
   title,
   subtitle,
   showProgress = true,
-  totalSteps = 3, // Default to 3 steps for regular users
+  totalSteps = 2, // Default to 2 steps
 }: CheckInLayoutProps) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center page-gradient px-4 py-12 font-['Inter']">

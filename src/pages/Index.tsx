@@ -8,6 +8,7 @@ const Index = () => {
       step={1}
       title="Howdy!"
       subtitle="Let's get you checked in 🐾"
+      totalSteps={2}
     >
       <div className="space-y-6">
         <CheckInForm />
