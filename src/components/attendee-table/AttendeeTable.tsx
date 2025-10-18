@@ -14,14 +14,14 @@ interface AttendeeTableProps {
 
 const AttendeeTable = ({ data }: AttendeeTableProps) => {
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-white rounded-lg shadow overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name/Email</TableHead>
-            <TableHead className="hidden md:table-cell">Has Dog</TableHead>
-            <TableHead className="hidden md:table-cell">Vaccinations</TableHead>
-            <TableHead>Waiver Signature</TableHead>
+            <TableHead className="min-w-[200px]">Name/Email</TableHead>
+            <TableHead className="min-w-[100px]">Has Dog</TableHead>
+            <TableHead className="min-w-[150px]">Vaccinations</TableHead>
+            <TableHead className="min-w-[150px]">Waiver Signature</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

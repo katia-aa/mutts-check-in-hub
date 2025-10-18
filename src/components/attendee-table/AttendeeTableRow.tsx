@@ -24,7 +24,7 @@ const AttendeeTableRow = ({ attendee }: AttendeeTableRowProps) => {
           </div>
         </div>
       </TableCell>
-      <TableCell className="hidden md:table-cell">
+      <TableCell>
         <div className="flex items-center gap-2">
           {attendee.has_dog ? (
             <>
@@ -39,7 +39,7 @@ const AttendeeTableRow = ({ attendee }: AttendeeTableRowProps) => {
           )}
         </div>
       </TableCell>
-      <TableCell className="hidden md:table-cell">
+      <TableCell>
         {attendee.has_dog ? (
           <div className="space-y-1 text-sm">
             <div className="flex items-center gap-2">
