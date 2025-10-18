@@ -16,12 +16,13 @@ const AdminDashboard = () => {
   } = useAttendeeSync();
 
   useEffect(() => {
-    syncEventbriteOrders();
+    // Load attendees directly from database on mount
+    fetchAttendees();
   }, []);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <AdminHeader onSync={syncEventbriteOrders} isLoading={isLoading} />
+      <AdminHeader />
 
       <ErrorDisplay
         errorMessage={errorMessage}
